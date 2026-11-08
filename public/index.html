@@ -96,7 +96,7 @@ main{display:grid;gap:18px;padding-top:16px}
 .link{border:0;background:none;color:var(--accent);font-weight:400;cursor:pointer;padding:4px 2px;font-size:15px}
 .link:active{opacity:.4}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle;margin-right:5px;background:var(--who,var(--muted))}
-input[type="text"],input[type="search"],textarea{width:100%;background:var(--fill);border:0;border-radius:10px;padding:10px 12px;line-height:1.45;font-size:17px;-webkit-appearance:none;appearance:none}
+input[type="text"],input[type="password"],input[type="search"],textarea{width:100%;background:var(--fill);border:0;border-radius:10px;padding:10px 12px;line-height:1.45;font-size:17px;-webkit-appearance:none;appearance:none}
 input[type="search"]{padding-left:34px;background:var(--fill) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='m20 20-4.6-4.6'/%3E%3C/svg%3E") 10px 50%/17px no-repeat}
 textarea{resize:none;min-height:80px;field-sizing:content}
 input::placeholder,textarea::placeholder{color:var(--muted);opacity:.75}
@@ -282,18 +282,24 @@ mark{background:var(--dawn-soft);color:var(--ink);border-radius:3px;padding:0 2p
       <div class="card"><p style="margin:0">아직 Firebase 설정이 들어가지 않았어요. <b>public/config.js</b>에 Firebase 프로젝트의 설정 값을 붙여 넣은 뒤 다시 배포해 주세요. 자세한 방법은 함께 드린 안내서(README)에 있어요.</p></div>
     </section>
 
-    <section id="g-inapp" hidden>
-      <div class="card">
-        <p style="margin:0 0 12px">카카오톡·네이버 같은 앱 안의 브라우저에서는 구글 로그인이 막혀 있어요. 오른쪽 위 메뉴에서 <b>다른 브라우저로 열기</b>(사파리·크롬)를 눌러 주세요.</p>
-        <button type="button" class="btn line" id="copyHere">이 주소 복사하기</button>
-      </div>
-    </section>
-
     <section id="g-signin" hidden>
-      <button type="button" class="btn gbtn" id="googleBtn">
-        <svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
-        Google로 계속하기</button>
-      <p class="meta" id="inviteNote" hidden style="text-align:center;margin:0">가족 초대 링크로 들어오셨어요. 로그인하면 바로 참여할 수 있어요.</p>
+      <div class="seg" role="group" aria-label="로그인 또는 가입">
+        <button type="button" class="chip" id="tabLogin" aria-pressed="true">로그인</button>
+        <button type="button" class="chip" id="tabSignup" aria-pressed="false">처음이에요 (가입)</button>
+      </div>
+      <form class="card gform" id="authForm" autocomplete="on">
+        <label class="lbl" for="authId">아이디</label>
+        <input type="text" id="authId" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="20" placeholder="영문·숫자 4~20자">
+        <label class="lbl" for="authPw">비밀번호</label>
+        <input type="password" id="authPw" name="password" autocomplete="current-password" maxlength="64" placeholder="6자 이상">
+        <div id="pw2Wrap" hidden>
+          <label class="lbl" for="authPw2">비밀번호 확인</label>
+          <input type="password" id="authPw2" autocomplete="new-password" maxlength="64" placeholder="한 번 더 입력">
+        </div>
+        <button type="submit" class="btn" id="authBtn">로그인</button>
+        <p class="meta" id="signupNote" hidden style="margin:4px 0 0">아이디·비밀번호는 잊어버리면 찾을 수 없어요. 꼭 기억해 두세요.</p>
+      </form>
+      <p class="meta" id="inviteNote" hidden style="text-align:center;margin:0">가족 초대 링크로 들어오셨어요. 처음이면 '가입'을 눌러 아이디를 만든 뒤 참여하세요.</p>
     </section>
 
     <section id="g-family" hidden>
@@ -313,7 +319,7 @@ mark{background:var(--dawn-soft);color:var(--ink);border-radius:3px;padding:0 2p
         <input type="text" id="myNick" maxlength="12" placeholder="예: 아빠">
         <button type="button" class="btn ghost" id="createFam">가족 만들기</button>
       </div>
-      <button type="button" class="link" id="signOut1" style="justify-self:center">다른 구글 계정으로 로그인</button>
+      <button type="button" class="link" id="signOut1" style="justify-self:center">다른 아이디로 로그인</button>
     </section>
 
     <p class="gate-msg" id="gateMsg" role="alert"></p>
@@ -450,7 +456,7 @@ mark{background:var(--dawn-soft);color:var(--ink);border-radius:3px;padding:0 2p
       </div>
       <div class="card fam">
         <h2 id="famTitle">가족 초대하기</h2>
-        <p class="meta" style="margin:4px 0 10px">이 링크를 카카오톡으로 보내면, 가족이 구글로 로그인한 뒤 바로 참여해요.</p>
+        <p class="meta" style="margin:4px 0 10px">이 링크를 카카오톡으로 보내면, 가족이 아이디를 만들고 바로 참여해요.</p>
         <p class="invite" id="inviteLink"></p>
         <div class="row" style="margin-top:12px">
           <button type="button" class="btn" id="shareInvite">초대 링크 보내기</button>

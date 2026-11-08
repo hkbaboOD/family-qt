@@ -1,6 +1,6 @@
-// 우리 가족 큐티 — Firebase(Google 로그인 + Firestore) 버전
+// 우리 가족 큐티 — Firebase(아이디·비밀번호 로그인 + Firestore) 버전
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
-import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signOut } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 import { initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager, doc, collection, setDoc, getDoc, deleteDoc, onSnapshot, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 
 let fbApp = null, auth = null, fdb = null;
@@ -516,7 +516,7 @@ function renderFamilyView(){
   $('#famTitle').textContent = fam && str(fam.name, 30) ? str(fam.name, 30) + ' 초대하기' : '가족 초대하기';
   $('#inviteLink').textContent = fam && fam.inviteCode ? inviteUrl(S.fid, fam.inviteCode) : '초대 링크를 불러오는 중…';
   $('#regenCode').hidden = !(fam && fam.ownerUid === S.uid);
-  $('#acctLine').textContent = S.fbUser ? (S.fbUser.email || S.fbUser.displayName || '') + ' 계정으로 로그인됨' : '';
+  $('#acctLine').textContent = S.fbUser ? '아이디 ' + idFromEmail(S.fbUser.email) + ' 로 로그인됨' : '';
   $('#leaveFam').textContent = S.confirmLeave ? '한 번 더 누르면 가족에서 나가요' : '가족에서 나가기';
   $('#modeLine').textContent = '나만 보기로 저장한 묵상과 기도제목은 본인 계정에만 저장돼요.';
 }
@@ -640,7 +640,7 @@ function subscribe(){
 }
 
 /* ---------- gate: sign-in & family setup ---------- */
-const GATES = ['loading','config','inapp','signin','family'];
+const GATES = ['loading','config','signin','family'];
 function showGate(which, msg){
   $('#app').hidden = true; $('#gate').hidden = false;
   GATES.forEach(k => { $('#g-' + k).hidden = k !== which; });
@@ -657,26 +657,49 @@ function parseInvite(s){
   if (!m) m = s.match(/^([A-Za-z0-9]{10,40})\.([A-Za-z0-9]{8,40})$/);
   return m ? {fid:m[1], code:m[2]} : null;
 }
-const myName = () => (S.fbUser && S.fbUser.displayName) || '';
+const ID_DOMAIN = '@family-qt.app';
+const idFromEmail = em => String(em || '').replace(ID_DOMAIN, '');
+const myName = () => (S.fbUser && (S.fbUser.displayName || idFromEmail(S.fbUser.email))) || '';
 function clearInviteParam(){
   lsDel('family-qt-invite');
   if (location.search) try { history.replaceState(null, '', location.pathname + location.hash); } catch(e){}
 }
-async function googleSignIn(){
+let signupMode = false;
+function setAuthMode(signup){
+  signupMode = signup;
+  $('#tabLogin').setAttribute('aria-pressed', String(!signup));
+  $('#tabSignup').setAttribute('aria-pressed', String(signup));
+  $('#pw2Wrap').hidden = !signup; $('#signupNote').hidden = !signup;
+  $('#authBtn').textContent = signup ? '가입하고 시작하기' : '로그인';
+  $('#authPw').setAttribute('autocomplete', signup ? 'new-password' : 'current-password');
   gateMsg('');
-  const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({prompt:'select_account'});
-  try { await signInWithPopup(auth, provider); }
-  catch(e){
-    const c = e && e.code;
-    if (c === 'auth/popup-blocked' || c === 'auth/operation-not-supported-in-this-environment' || c === 'auth/web-storage-unsupported'){
-      try { await signInWithRedirect(auth, provider); } catch(e2){ gateMsg('로그인하지 못했어요. 사파리나 크롬에서 다시 열어 주세요.'); }
-    } else if (c === 'auth/unauthorized-domain'){
-      gateMsg('이 주소가 Firebase 로그인 허용 도메인에 없어요. 안내서의 \'승인된 도메인\' 단계를 확인해 주세요.');
-    } else if (c !== 'auth/popup-closed-by-user' && c !== 'auth/cancelled-popup-request'){
-      gateMsg('로그인하지 못했어요. 잠시 후 다시 시도해 주세요.');
+}
+async function idAuth(e){
+  e.preventDefault(); gateMsg('');
+  const id = $('#authId').value.trim().toLowerCase();
+  const pw = $('#authPw').value;
+  if (!/^[a-z0-9][a-z0-9._-]{3,19}$/.test(id)){ gateMsg('아이디는 영문 소문자·숫자로 4~20자여야 해요.'); return; }
+  if (pw.length < 6){ gateMsg('비밀번호는 6자 이상이어야 해요.'); return; }
+  if (signupMode && pw !== $('#authPw2').value){ gateMsg('비밀번호 확인이 일치하지 않아요.'); return; }
+  const btn = $('#authBtn'); btn.disabled = true;
+  try {
+    if (signupMode){
+      const cred = await createUserWithEmailAndPassword(auth, id + ID_DOMAIN, pw);
+      try { await updateProfile(cred.user, {displayName:id}); } catch(e2){}
+    } else {
+      await signInWithEmailAndPassword(auth, id + ID_DOMAIN, pw);
     }
+  } catch(err){
+    const c = err && err.code;
+    if (c === 'auth/email-already-in-use') gateMsg('이미 있는 아이디예요. 다른 아이디를 쓰거나 로그인해 주세요.');
+    else if (c === 'auth/invalid-credential' || c === 'auth/wrong-password' || c === 'auth/user-not-found' || c === 'auth/invalid-login-credentials') gateMsg(signupMode ? '가입하지 못했어요. 다시 시도해 주세요.' : '아이디 또는 비밀번호가 맞지 않아요. 처음이면 \'가입\'을 눌러 주세요.');
+    else if (c === 'auth/weak-password') gateMsg('비밀번호가 너무 쉬워요. 6자 이상으로 정해 주세요.');
+    else if (c === 'auth/too-many-requests') gateMsg('시도가 너무 많았어요. 잠시 후 다시 해 주세요.');
+    else if (c === 'auth/operation-not-allowed') gateMsg('아이디 로그인이 아직 켜지지 않았어요. 관리자에게 알려 주세요.');
+    else if (c === 'auth/network-request-failed') gateMsg('인터넷 연결을 확인해 주세요.');
+    else gateMsg('로그인하지 못했어요. (' + (c || '오류') + ')');
   }
+  btn.disabled = false;
 }
 async function afterSignIn(user){
   S.uid = user.uid; S.fbUser = user;
@@ -756,7 +779,7 @@ async function shareInvite(){
   const url = S.family && S.family.inviteCode ? inviteUrl(S.fid, S.family.inviteCode) : '';
   if (!url) return;
   const famName = S.family && str(S.family.name, 30) || '우리 가족';
-  const text = famName + ' 큐티에 초대해요. 링크를 열고 구글로 로그인하면 함께 묵상과 기도제목을 나눌 수 있어요.';
+  const text = famName + ' 큐티에 초대해요. 링크를 열고 아이디를 만들면 함께 묵상과 기도제목을 나눌 수 있어요.';
   if (navigator.share){
     try { await navigator.share({title:'우리 가족 큐티', text, url}); return; }
     catch(e){ if (e && e.name === 'AbortError') return; }
@@ -792,11 +815,12 @@ async function leaveFamily(){
 /* ---------- boot ---------- */
 function init(){
   bind();
-  $('#googleBtn').addEventListener('click', googleSignIn);
+  $('#authForm').addEventListener('submit', idAuth);
+  $('#tabLogin').addEventListener('click', () => setAuthMode(false));
+  $('#tabSignup').addEventListener('click', () => setAuthMode(true));
   $('#createFam').addEventListener('click', createFamily);
   $('#joinFam').addEventListener('click', joinFamily);
   $('#signOut1').addEventListener('click', doSignOut);
-  $('#copyHere').addEventListener('click', () => copyText(location.href));
 
   const inv = parseInvite(location.search);
   if (inv) lsSet('family-qt-invite', inv.fid + '.' + inv.code);
@@ -804,23 +828,18 @@ function init(){
   const cfg = window.FIREBASE_CONFIG;
   if (!cfg || !cfg.apiKey || /붙여|YOUR/i.test(cfg.apiKey)){ showGate('config'); return; }
 
-  const UA = navigator.userAgent || '';
-  const inApp = /KAKAOTALK|NAVER\(inapp|Instagram|FBAN|FBAV|Line\/|DaumApps|BAND\//i.test(UA);
-  if (/KAKAOTALK/i.test(UA)) { location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href); }
-
   fbApp = initializeApp(cfg);
   auth = getAuth(fbApp);
   try { fdb = initializeFirestore(fbApp, {localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})}); }
   catch(e){ fdb = getFirestore(fbApp); }
 
-  getRedirectResult(auth).catch(e => { if (e && e.code && e.code !== 'auth/no-auth-event') gateMsg('로그인하지 못했어요. 다시 시도해 주세요.'); });
-
   onAuthStateChanged(auth, user => {
     if (user){ afterSignIn(user); return; }
     stopSubs(); S.uid = null; S.fbUser = null; S.fid = null;
-    if (inApp){ showGate('inapp'); return; }
     showGate('signin');
-    $('#inviteNote').hidden = !parseInvite(lsGet('family-qt-invite'));
+    const invited = !!parseInvite(lsGet('family-qt-invite'));
+    $('#inviteNote').hidden = !invited;
+    setAuthMode(invited);
   });
 }
 init();
