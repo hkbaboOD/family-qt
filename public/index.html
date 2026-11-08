@@ -117,6 +117,18 @@ label.lbl{display:block;font-size:13px;font-weight:400;color:var(--muted);margin
 .ext{color:var(--accent);font-size:15px;text-decoration:none;padding:6px 0;display:inline-flex;align-items:center;gap:2px}
 .ext:active{opacity:.4}
 .src{font-size:13px;color:var(--muted)}
+.bv-box{margin-top:12px;border-top:.5px solid var(--line);padding-top:10px}
+.bv-box summary{cursor:pointer;list-style:none;font-weight:600;font-size:16px;display:flex;align-items:center;gap:6px}
+.bv-box summary::-webkit-details-marker{display:none}
+.bv-box summary::after{content:"›";margin-left:auto;color:var(--muted);transition:transform .2s}
+.bv-box[open] summary::after{transform:rotate(90deg)}
+.bv-list{margin-top:6px;max-width:65ch}
+.bv{font-family:var(--font-verse);font-size:18px;line-height:1.75;margin:0 0 6px}
+.bv sup{font-family:var(--font-ui,inherit);font-size:11px;color:var(--accent);font-weight:600;margin-right:4px;vertical-align:.45em}
+.bv-ch{font-size:14px;color:var(--muted);margin:14px 0 6px;font-weight:600}
+.bv-ch:first-child{margin-top:8px}
+.bv-wait{color:var(--muted);font-size:15px;margin:8px 0}
+.bg-tag.txt{background:var(--accent);color:#fff}
 .study-links{margin-top:10px;padding-top:10px;border-top:.5px solid var(--line)}
 .bg-note{margin-top:12px;background:var(--fill);border-radius:12px;padding:12px 14px}
 .bg-note summary{cursor:pointer;list-style:none;font-weight:600;font-size:16px;line-height:1.4;display:flex;flex-wrap:wrap;align-items:center;gap:6px}

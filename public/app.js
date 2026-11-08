@@ -262,13 +262,48 @@ function parsePassage(ref){
   const m = s.slice(hit[0].length).match(/^\s*(\d+)(?::(\d+))?(?:\s*[-–~]\s*(?:(\d+):)?(\d+))?/);
   if (!m) return null;
   const ch = Number(m[1]); let endCh = m[3] ? Number(m[3]) : ch;
-  if (!m[2] && m[4]) endCh = Number(m[4]);
-  if (endCh < ch || endCh - ch > 5) endCh = ch;
-  return {code:hit[1], name:hit[2], ch, endCh};
+  let sv = 0, ev = 0;                       // 0 = whole chapter
+  if (m[2]){ sv = Number(m[2]); ev = m[4] ? Number(m[4]) : sv; }
+  else if (m[4]) endCh = Number(m[4]);
+  if (endCh < ch || endCh - ch > 5){ endCh = ch; if (m[3]) ev = 0; }
+  if (endCh === ch && sv && ev < sv) ev = sv;
+  return {code:hit[1], name:hit[2], ch, endCh, sv, ev};
 }
+
+/* ---------- 개역한글 본문 (1961, 저작권 만료 · 퍼블릭 도메인) ---------- */
+const BIBLE = {}, BIBLE_LOADING = {};
+async function loadBook(code){
+  if (BIBLE[code] || BIBLE_LOADING[code]) return;
+  BIBLE_LOADING[code] = true;
+  try {
+    const r = await fetch('bible/' + code + '.json');
+    if (r.ok){ BIBLE[code] = await r.json(); $('#planCard')._h = null; schedule(); }
+    else BIBLE[code] = {error:true};
+  } catch(e){ BIBLE_LOADING[code] = false; BIBLE[code] = {error:true, retry:true}; }
+}
+function verseHTML(ref){
+  const b = BIBLE[ref.code];
+  const id = 'txt-' + ref.code + '-' + ref.ch + '-' + ref.sv + '-' + ref.endCh + '-' + ref.ev;
+  const open = S.bgClosed.has(id) ? '' : ' open';
+  const head = '<summary><span class="bg-tag txt">개역한글</span>본문 읽기</summary>';
+  if (!b){ loadBook(ref.code); return '<details class="bv-box" id="' + id + '"' + open + '>' + head + '<p class="bv-wait">본문 불러오는 중…</p></details>'; }
+  if (b.error || !Array.isArray(b.chapters)) return '';
+  let body = '';
+  for (let c = ref.ch; c <= ref.endCh; c++){
+    const vs = b.chapters[c - 1]; if (!Array.isArray(vs)) continue;
+    let from = 1, to = vs.length;
+    if (ref.sv){ if (c === ref.ch) from = ref.sv; if (c === ref.endCh && ref.ev) to = Math.min(ref.ev, vs.length); }
+    if (from > to) continue;
+    if (ref.endCh > ref.ch || !ref.sv) body += '<h4 class="bv-ch">' + esc(b.name || ref.name) + ' ' + c + '장</h4>';
+    for (let v = from; v <= to; v++) body += '<p class="bv"><sup>' + v + '</sup>' + esc(str(vs[v - 1], 2000)) + '</p>';
+  }
+  if (!body) return '';
+  return '<details class="bv-box" id="' + id + '"' + open + '>' + head + '<div class="bv-list">' + body + '</div><p class="src" style="margin:10px 0 0">개역한글판(1961) · 저작권 만료 본문</p></details>';
+}
+
 function studyHTML(passage){
   const ref = parsePassage(passage); if (!ref) return '';
-  let html = '<div class="study-links"><a class="ext" href="https://www.bskorea.or.kr/bible/korbibReadpage.php?version=GAE&amp;book=' + ref.code + '&amp;chap=' + ref.ch + '" target="_blank" rel="noopener">' + esc(ref.name + ' ' + ref.ch + '장') + ' 본문 읽기 · 대한성서공회 ↗</a></div>';
+  let html = verseHTML(ref) + '<div class="study-links"><a class="ext" href="https://www.bskorea.or.kr/bible/korbibReadpage.php?version=GAE&amp;book=' + ref.code + '&amp;chap=' + ref.ch + '" target="_blank" rel="noopener">' + esc(ref.name + ' ' + ref.ch + '장') + ' 개역개정으로 읽기 · 대한성서공회 ↗</a></div>';
   for (let c = ref.ch; c <= ref.endCh; c++){
     const n = S.notes && S.notes[ref.code + '-' + c];
     if (!n || typeof n !== 'object') continue;
@@ -630,7 +665,7 @@ function bind(){
   document.addEventListener('toggle', e => {
     const t = e.target; if (!t || !t.id) return;
     if (t.id === 'planDetails') S.planOpen = t.open;
-    else if (t.id.startsWith('bg-')){ if (t.open) S.bgClosed.delete(t.id); else S.bgClosed.add(t.id); }
+    else if (t.id.startsWith('bg-') || t.id.startsWith('txt-')){ if (t.open) S.bgClosed.delete(t.id); else S.bgClosed.add(t.id); }
   }, true);
   document.addEventListener('submit', e => {
     const f = e.target;
