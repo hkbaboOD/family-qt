@@ -256,10 +256,11 @@ const BOOKS = [
 ];
 const BOOK_KEYS = BOOKS.flatMap(([c, full, ab]) => [[full, c, full], [ab, c, full]]).sort((a, b) => b[0].length - a[0].length);
 function parsePassage(ref){
-  const s = String(ref || '').replace(/\s+/g, ' ').trim();
-  const hit = BOOK_KEYS.find(([k]) => s.startsWith(k) && /^\s*\d/.test(s.slice(k.length)));
+  const s = String(ref || '').replace(/\s+/g, ' ').trim()
+    .replace(/(\d+)\s*(?:장|편)\s*(\d+)/g, '$1:$2').replace(/(\d)\s*(?:장|편|절)/g, '$1');
+  const hit = BOOK_KEYS.find(([k]) => s.startsWith(k) && /^서?\s*\d/.test(s.slice(k.length)));
   if (!hit) return null;
-  const m = s.slice(hit[0].length).match(/^\s*(\d+)(?::(\d+))?(?:\s*[-–~]\s*(?:(\d+):)?(\d+))?/);
+  const m = s.slice(hit[0].length).replace(/^서/, '').match(/^\s*(\d+)(?::(\d+))?(?:\s*[-–~]\s*(?:(\d+):)?(\d+))?/);
   if (!m) return null;
   const ch = Number(m[1]); let endCh = m[3] ? Number(m[3]) : ch;
   let sv = 0, ev = 0;                       // 0 = whole chapter
@@ -288,16 +289,18 @@ function verseHTML(ref){
   const head = '<summary><span class="bg-tag txt">개역한글</span>본문 읽기</summary>';
   if (!b){ loadBook(ref.code); return '<details class="bv-box" id="' + id + '"' + open + '>' + head + '<p class="bv-wait">본문 불러오는 중…</p></details>'; }
   if (b.error || !Array.isArray(b.chapters)) return '';
-  let body = '';
+  let body = '', partial = false;
   for (let c = ref.ch; c <= ref.endCh; c++){
     const vs = b.chapters[c - 1]; if (!Array.isArray(vs)) continue;
+    // 대한성서공회 화면처럼 장 전체를 보여 주고, 오늘 범위는 강조
     let from = 1, to = vs.length;
     if (ref.sv){ if (c === ref.ch) from = ref.sv; if (c === ref.endCh && ref.ev) to = Math.min(ref.ev, vs.length); }
-    if (from > to) continue;
-    if (ref.endCh > ref.ch || !ref.sv) body += '<h4 class="bv-ch">' + esc(b.name || ref.name) + ' ' + c + '장</h4>';
-    for (let v = from; v <= to; v++) body += '<p class="bv"><sup>' + v + '</sup>' + esc(str(vs[v - 1], 2000)) + '</p>';
+    body += '<h4 class="bv-ch">' + esc(b.name || ref.name) + ' ' + c + '장</h4>';
+    if (ref.sv && (from > 1 || to < vs.length)) partial = true;
+    for (let v = 1; v <= vs.length; v++) body += '<p class="bv' + (ref.sv && v >= from && v <= to ? ' on' : '') + '"><sup>' + v + '</sup>' + esc(str(vs[v - 1], 2000)) + '</p>';
   }
   if (!body) return '';
+  if (!partial) body = body.split('<p class="bv on">').join('<p class="bv">');
   return '<details class="bv-box" id="' + id + '"' + open + '>' + head + '<div class="bv-list">' + body + '</div><p class="src" style="margin:10px 0 0">개역한글판(1961) · 저작권 만료 본문</p></details>';
 }
 
