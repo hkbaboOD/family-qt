@@ -30,7 +30,7 @@ const S = {
   prTab:'active', prWho:'all', editPrayer:null, answering:null, confirmPr:null,
   fid:null, family:null, fbUser:null, unsubs:[], confirmLeave:false,
   date: todayStr(), view:'today', calMonth: todayStr().slice(0,7),
-  cardFilter:'all', recite:false, open:new Set(), editingPlan:false, planOpen:false,
+  cardFilter:'all', recite:false, open:new Set(), editingPlan:false, planOpen:false, notes:null, bgClosed:new Set(),
   dirty:false, formKey:'', confirmDel:false, pickColor:null, raf:0
 };
 
@@ -233,7 +233,59 @@ function renderPlan(){
       (typeof p.uid === 'string' ? '<p class="meta" style="margin:6px 0 0">정한 사람 · <span class="dot" style="background:' + colorOf(p.uid) + '"></span>' + esc(nameOf(p.uid)) + '</p>' : '') +
       (sumLink ? '<div style="margin-top:8px">' + sumLink + '</div>' : '');
   }
+  if (p && str(p.passage)) html += studyHTML(str(p.passage, 120));
   setHTML(el, html);
+}
+
+/* ---------- bible link & background notes ---------- */
+const BOOKS = [
+  ['gen','창세기','창'],['exo','출애굽기','출'],['lev','레위기','레'],['num','민수기','민'],['deu','신명기','신'],
+  ['jos','여호수아','수'],['jdg','사사기','삿'],['rut','룻기','룻'],['1sa','사무엘상','삼상'],['2sa','사무엘하','삼하'],
+  ['1ki','열왕기상','왕상'],['2ki','열왕기하','왕하'],['1ch','역대상','대상'],['2ch','역대하','대하'],['ezr','에스라','스'],
+  ['neh','느헤미야','느'],['est','에스더','에'],['job','욥기','욥'],['psa','시편','시'],['pro','잠언','잠'],
+  ['ecc','전도서','전'],['sng','아가','아'],['isa','이사야','사'],['jer','예레미야','렘'],['lam','예레미야애가','애'],
+  ['ezk','에스겔','겔'],['dan','다니엘','단'],['hos','호세아','호'],['jol','요엘','욜'],['amo','아모스','암'],
+  ['oba','오바댜','옵'],['jnh','요나','욘'],['mic','미가','미'],['nam','나훔','나'],['hab','하박국','합'],
+  ['zep','스바냐','습'],['hag','학개','학'],['zec','스가랴','슥'],['mal','말라기','말'],
+  ['mat','마태복음','마'],['mrk','마가복음','막'],['luk','누가복음','눅'],['jhn','요한복음','요'],['act','사도행전','행'],
+  ['rom','로마서','롬'],['1co','고린도전서','고전'],['2co','고린도후서','고후'],['gal','갈라디아서','갈'],['eph','에베소서','엡'],
+  ['php','빌립보서','빌'],['col','골로새서','골'],['1th','데살로니가전서','살전'],['2th','데살로니가후서','살후'],['1ti','디모데전서','딤전'],
+  ['2ti','디모데후서','딤후'],['tit','디도서','딛'],['phm','빌레몬서','몬'],['heb','히브리서','히'],['jas','야고보서','약'],
+  ['1pe','베드로전서','벧전'],['2pe','베드로후서','벧후'],['1jn','요한일서','요일'],['2jn','요한이서','요이'],['3jn','요한삼서','요삼'],
+  ['jud','유다서','유'],['rev','요한계시록','계']
+];
+const BOOK_KEYS = BOOKS.flatMap(([c, full, ab]) => [[full, c, full], [ab, c, full]]).sort((a, b) => b[0].length - a[0].length);
+function parsePassage(ref){
+  const s = String(ref || '').replace(/\s+/g, ' ').trim();
+  const hit = BOOK_KEYS.find(([k]) => s.startsWith(k) && /^\s*\d/.test(s.slice(k.length)));
+  if (!hit) return null;
+  const m = s.slice(hit[0].length).match(/^\s*(\d+)(?::(\d+))?(?:\s*[-–~]\s*(?:(\d+):)?(\d+))?/);
+  if (!m) return null;
+  const ch = Number(m[1]); let endCh = m[3] ? Number(m[3]) : ch;
+  if (!m[2] && m[4]) endCh = Number(m[4]);
+  if (endCh < ch || endCh - ch > 5) endCh = ch;
+  return {code:hit[1], name:hit[2], ch, endCh};
+}
+function studyHTML(passage){
+  const ref = parsePassage(passage); if (!ref) return '';
+  let html = '<div class="study-links"><a class="ext" href="https://www.bskorea.or.kr/bible/korbibReadpage.php?version=GAE&amp;book=' + ref.code + '&amp;chap=' + ref.ch + '" target="_blank" rel="noopener">' + esc(ref.name + ' ' + ref.ch + '장') + ' 본문 읽기 · 대한성서공회 ↗</a></div>';
+  for (let c = ref.ch; c <= ref.endCh; c++){
+    const n = S.notes && S.notes[ref.code + '-' + c];
+    if (!n || typeof n !== 'object') continue;
+    const id = 'bg-' + ref.code + '-' + c;
+    const open = S.bgClosed && S.bgClosed.has(id) ? '' : ' open';
+    html += '<details class="bg-note" id="' + id + '"' + open + '><summary><span class="bg-tag">시대배경·역사</span>' + esc(str(n.title, 120)) + '</summary>' +
+      (str(n.era) ? '<p class="bg-era">' + esc(str(n.era, 300)) + '</p>' : '') +
+      (str(n.background) ? '<p class="bg-body">' + esc(str(n.background, 3000)) + '</p>' : '') +
+      (Array.isArray(n.facts) && n.facts.length ? '<h4 class="bg-h">역사적 사실</h4><ul class="bg-facts">' + n.facts.map(f => '<li>' + esc(str(f, 800)) + '</li>').join('') + '</ul>' : '') +
+      ((Array.isArray(n.places) && n.places.length) || (Array.isArray(n.people) && n.people.length) ?
+        '<div class="bg-chips">' + (n.places || []).map(x => '<span class="bg-chip place">' + esc(str(x, 60)) + '</span>').join('') + (n.people || []).map(x => '<span class="bg-chip person">' + esc(str(x, 60)) + '</span>').join('') + '</div>' : '') +
+      '</details>';
+  }
+  return html;
+}
+async function loadNotes(){
+  try { const r = await fetch('notes.json', {cache:'no-cache'}); if (r.ok){ S.notes = await r.json(); $('#planCard')._h = null; schedule(); } } catch(e){}
 }
 async function savePlan(e){
   e.preventDefault();
@@ -575,7 +627,11 @@ function bind(){
   $('#prCancel').addEventListener('click', resetPrayerForm);
   $('#pr-text').addEventListener('input', e => autosize(e.target));
   resetPrayerForm();
-  document.addEventListener('toggle', e => { if (e.target && e.target.id === 'planDetails') S.planOpen = e.target.open; }, true);
+  document.addEventListener('toggle', e => {
+    const t = e.target; if (!t || !t.id) return;
+    if (t.id === 'planDetails') S.planOpen = t.open;
+    else if (t.id.startsWith('bg-')){ if (t.open) S.bgClosed.delete(t.id); else S.bgClosed.add(t.id); }
+  }, true);
   document.addEventListener('submit', e => {
     const f = e.target;
     if (f.id === 'planForm'){ savePlan(e); return; }
@@ -815,6 +871,7 @@ async function leaveFamily(){
 /* ---------- boot ---------- */
 function init(){
   bind();
+  loadNotes();
   $('#authForm').addEventListener('submit', idAuth);
   $('#tabLogin').addEventListener('click', () => setAuthMode(false));
   $('#tabSignup').addEventListener('click', () => setAuthMode(true));

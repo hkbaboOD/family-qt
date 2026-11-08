@@ -117,6 +117,21 @@ label.lbl{display:block;font-size:13px;font-weight:400;color:var(--muted);margin
 .ext{color:var(--accent);font-size:15px;text-decoration:none;padding:6px 0;display:inline-flex;align-items:center;gap:2px}
 .ext:active{opacity:.4}
 .src{font-size:13px;color:var(--muted)}
+.study-links{margin-top:10px;padding-top:10px;border-top:.5px solid var(--line)}
+.bg-note{margin-top:12px;background:var(--fill);border-radius:12px;padding:12px 14px}
+.bg-note summary{cursor:pointer;list-style:none;font-weight:600;font-size:16px;line-height:1.4;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.bg-note summary::-webkit-details-marker{display:none}
+.bg-note summary::after{content:"›";margin-left:auto;color:var(--muted);transition:transform .2s}
+.bg-note[open] summary::after{transform:rotate(90deg)}
+.bg-tag{font-size:12px;font-weight:600;color:var(--on-accent);background:var(--accent);padding:2px 8px;border-radius:999px}
+.bg-era{margin:10px 0 0;font-size:14px;color:var(--accent);font-weight:500}
+.bg-body{margin:8px 0 0;font-size:16px;line-height:1.7;max-width:65ch}
+.bg-h{margin:14px 0 4px;font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase}
+.bg-facts{margin:0;padding-left:18px;display:grid;gap:8px;font-size:15px;line-height:1.6}
+.bg-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.bg-chip{font-size:13px;padding:3px 10px;border-radius:999px;background:var(--surface)}
+.bg-chip.place::before{content:"📍 "}
+.bg-chip.person{color:var(--accent)}
 
 /* my entry */
 .my-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px}
