@@ -1,0 +1,58 @@
+rules_version = '2';
+// 우리 가족 큐티 보안 규칙
+// - 가족 기록은 그 가족 구성원만 읽고 쓸 수 있어요.
+// - 묵상·기도제목·댓글은 쓴 사람만 고치거나 지울 수 있어요.
+// - '나만 보기' 기록(users/{uid}/...)은 본인만 볼 수 있어요.
+// - 초대 링크의 코드가 맞아야 가족에 참여할 수 있어요.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+    function fam(fid) { return get(/databases/$(database)/documents/families/$(fid)).data; }
+    function isMember(fid) {
+      return signedIn() && exists(/databases/$(database)/documents/families/$(fid)/members/$(me()));
+    }
+    function ownsNew() { return request.resource.data.uid == me(); }
+    function ownsOld() { return resource.data.uid == me(); }
+    function small() { return request.resource.size() < 60; }
+
+    match /users/{uid} {
+      allow read, write: if signedIn() && me() == uid;
+      match /{rest=**} {
+        allow read, write: if signedIn() && me() == uid;
+      }
+    }
+
+    match /families/{fid} {
+      allow read: if isMember(fid);
+      allow create: if signedIn() && request.resource.data.ownerUid == me()
+                    && request.resource.data.inviteCode is string
+                    && request.resource.data.inviteCode.size() >= 12;
+      allow update: if isMember(fid)
+                    && request.resource.data.ownerUid == resource.data.ownerUid
+                    && (request.resource.data.inviteCode == resource.data.inviteCode || resource.data.ownerUid == me());
+      allow delete: if false;
+
+      match /members/{uid} {
+        allow read: if isMember(fid);
+        allow create: if signedIn() && me() == uid && request.resource.data.uid == uid
+                      && (fam(fid).ownerUid == me() || request.resource.data.code == fam(fid).inviteCode);
+        allow update: if signedIn() && me() == uid && request.resource.data.uid == uid;
+        allow delete: if signedIn() && (me() == uid || fam(fid).ownerUid == me());
+      }
+
+      match /plans/{date} {
+        allow read: if isMember(fid);
+        allow create, update: if isMember(fid) && small();
+        allow delete: if isMember(fid);
+      }
+
+      match /{col}/{id} {
+        allow read: if isMember(fid) && col in ['entries', 'reactions', 'prayers'];
+        allow create: if isMember(fid) && col in ['entries', 'reactions', 'prayers'] && ownsNew() && small();
+        allow update: if isMember(fid) && col in ['entries', 'reactions', 'prayers'] && ownsOld() && ownsNew() && small();
+        allow delete: if isMember(fid) && col in ['entries', 'reactions', 'prayers'] && ownsOld();
+      }
+    }
+  }
+}
