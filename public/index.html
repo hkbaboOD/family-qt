@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>우리 가족 큐티</title>
+<meta name="description" content="가족이 함께 쓰는 큐티 노트와 기도제목">
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="가족 큐티">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* iOS 그룹 리스트 스타일: 시스템 그룹 배경 위 흰 인셋 셀, 시스템 블루 강조, 반투명 내비·탭 바. 큰 제목 + 단일 컬럼 */
+  --bg:#F2F2F7;
+  --surface:#FFFFFF;
+  --ink:#000000;
+  --muted:rgba(60,60,67,.6);
+  --line:rgba(60,60,67,.29);
+  --fill:rgba(118,118,128,.12);
+  --accent:#007AFF;
+  --accent-soft:rgba(0,122,255,.12);
+  --on-accent:#FFFFFF;
+  --green:#34C759;
+  --red:#FF3B30;
+  --dawn:#FF9500;
+  --dawn-soft:rgba(255,149,0,.14);
+  --bar:rgba(249,249,249,.86);
+  --font-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+  --font-body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+  --font-verse:ui-serif,"New York","AppleMyungjo","Gowun Batang",serif;
+  --r:12px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#000000; --surface:#1C1C1E; --ink:#FFFFFF; --muted:rgba(235,235,245,.6); --line:rgba(84,84,88,.65); --fill:rgba(118,118,128,.24);
+    --accent:#0A84FF; --accent-soft:rgba(10,132,255,.2); --on-accent:#FFFFFF; --green:#30D158; --red:#FF453A; --dawn:#FF9F0A; --dawn-soft:rgba(255,159,10,.2);
+    --bar:rgba(22,22,24,.82); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#000000; --surface:#1C1C1E; --ink:#FFFFFF; --muted:rgba(235,235,245,.6); --line:rgba(84,84,88,.65); --fill:rgba(118,118,128,.24);
+  --accent:#0A84FF; --accent-soft:rgba(10,132,255,.2); --on-accent:#FFFFFF; --green:#30D158; --red:#FF453A; --dawn:#FF9F0A; --dawn-soft:rgba(255,159,10,.2);
+  --bar:rgba(22,22,24,.82); color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:17px;line-height:1.47;letter-spacing:-.01em;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:anywhere}
+button,input,textarea{font:inherit;color:inherit;letter-spacing:inherit}
+button{-webkit-appearance:none;appearance:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#app{max-width:680px;margin:0 auto;min-height:100%;padding:0 16px calc(96px + env(safe-area-inset-bottom))}
+
+/* navigation bar + large title */
+.top{position:sticky;top:0;z-index:5;margin:0 -16px;padding:calc(8px + env(safe-area-inset-top)) 16px 10px;background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:.5px solid var(--line);display:grid;gap:8px}
+.brand{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding-top:6px}
+h1{font-family:var(--font-display);font-size:34px;line-height:1.15;margin:0;font-weight:700;letter-spacing:.01em}
+.app-sub{margin:0;font-size:13px;color:var(--muted);font-weight:500}
+.streak{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;background:var(--dawn-soft);color:var(--dawn);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;margin-bottom:6px}
+.streak svg{width:14px;height:14px}
+.datenav{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;background:var(--fill);border-radius:10px;height:36px}
+.datenav button{height:36px;border:0;background:none;font-size:22px;line-height:1;cursor:pointer;color:var(--accent)}
+.datenav button:active{opacity:.4}
+.datelabel{position:relative;text-align:center;font-weight:600;font-size:15px;cursor:pointer;font-variant-numeric:tabular-nums}
+.datelabel small{color:var(--accent);font-weight:600;margin-left:6px;font-size:13px}
+.datelabel input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.status{font-size:13px;padding:8px 12px;border-radius:10px;background:var(--accent-soft);color:var(--ink)}
+.status.warn{background:var(--dawn-soft)}
+
+/* common */
+main{display:grid;gap:18px;padding-top:16px}
+.view{display:grid;gap:16px}
+.card{background:var(--surface);border-radius:var(--r);padding:16px}
+.eyebrow{margin:0;font-size:13px;font-weight:400;color:var(--muted);text-transform:uppercase;letter-spacing:.02em}
+.meta{color:var(--muted);font-size:13px}
+.section-title{font-family:var(--font-display);font-size:22px;font-weight:700;margin:6px 4px -6px;display:flex;align-items:center;gap:8px;text-wrap:balance}
+.count{font-size:13px;color:var(--muted);font-weight:600;background:var(--fill);padding:1px 8px;border-radius:999px;font-variant-numeric:tabular-nums}
+.empty{color:var(--muted);font-size:15px;margin:0;padding:4px 4px}
+.empty.small{font-size:13px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:12px;border:0;padding:0 18px;height:44px;font-weight:600;font-size:17px;cursor:pointer;background:var(--accent);color:var(--on-accent);white-space:nowrap;flex:none}
+.btn:active{opacity:.7}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.ghost{background:var(--accent-soft);color:var(--accent)}
+.btn.line{background:var(--fill);color:var(--ink)}
+.btn.small{height:34px;padding:0 14px;font-size:15px;border-radius:999px}
+.link{border:0;background:none;color:var(--accent);font-weight:400;cursor:pointer;padding:4px 2px;font-size:15px}
+.link:active{opacity:.4}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle;margin-right:5px;background:var(--who,var(--muted))}
+input[type="text"],input[type="search"],textarea{width:100%;background:var(--fill);border:0;border-radius:10px;padding:10px 12px;line-height:1.45;font-size:17px;-webkit-appearance:none;appearance:none}
+input[type="search"]{padding-left:34px;background:var(--fill) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='m20 20-4.6-4.6'/%3E%3C/svg%3E") 10px 50%/17px no-repeat}
+textarea{resize:none;min-height:80px;field-sizing:content}
+input::placeholder,textarea::placeholder{color:var(--muted);opacity:.75}
+label.lbl{display:block;font-size:13px;font-weight:400;color:var(--muted);margin:0 0 6px 2px;text-transform:uppercase;letter-spacing:.02em}
+
+/* plan */
+.plan-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.plan-ref{font-family:var(--font-display);font-size:28px;font-weight:700;line-height:1.2;margin:6px 0 2px;text-wrap:balance}
+.plan-title{margin:0 0 6px;color:var(--muted);font-size:15px}
+.plan-empty{margin:8px 0 12px;color:var(--muted);font-size:15px}
+.plan-text summary{cursor:pointer;color:var(--accent);font-size:15px;padding:6px 0;list-style:none}
+.plan-text summary::-webkit-details-marker{display:none}
+.plan-text summary::after{content:" ›";display:inline-block;transition:transform .2s}
+.plan-text[open] summary::after{transform:rotate(90deg)}
+.plan-text p{white-space:pre-wrap;font-family:var(--font-verse);font-size:18px;line-height:1.75;margin:8px 0 4px;max-width:65ch}
+.plan form{display:grid;gap:12px;margin-top:10px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ext{color:var(--accent);font-size:15px;text-decoration:none;padding:6px 0;display:inline-flex;align-items:center;gap:2px}
+.ext:active{opacity:.4}
+.src{font-size:13px;color:var(--muted)}
+
+/* my entry */
+.my-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px}
+.my-head h2{font-family:var(--font-display);font-size:22px;font-weight:700;margin:0}
+.save-state{font-size:13px;color:var(--muted);margin:2px 0 0}
+.steps{display:grid;gap:18px}
+.step{display:grid;grid-template-columns:28px 1fr;gap:10px}
+.num{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--on-accent);font-weight:600;font-size:14px;margin-top:1px}
+.step h3{margin:0;font-size:17px;font-weight:600}
+.step .hint{margin:0 0 8px;font-size:13px;color:var(--muted)}
+.verse-box{background:var(--accent-soft);border-radius:12px;padding:14px;display:grid;gap:8px}
+.verse-box input,.verse-box textarea{background:var(--surface)}
+.form-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:18px;padding-top:14px;border-top:.5px solid var(--line);flex-wrap:wrap}
+.switch{display:inline-flex;align-items:center;gap:10px;font-size:17px;cursor:pointer;user-select:none}
+.switch input{appearance:none;-webkit-appearance:none;width:51px;height:31px;border-radius:999px;background:var(--fill);position:relative;cursor:pointer;transition:background .25s;margin:0;flex:none}
+.switch input::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.15),0 3px 1px rgba(0,0,0,.06);transition:transform .25s}
+.switch input:checked{background:var(--green)}
+.switch input:checked::after{transform:translateX(20px)}
+.ro-note{font-size:15px;background:var(--dawn-soft);border-radius:10px;padding:10px 12px;margin:0 0 12px}
+
+/* family entries */
+.entry-head{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+.avatar{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--who);color:#fff;font-weight:600;font-size:17px;flex:none}
+.entry-head strong{display:block;line-height:1.3;font-size:17px;font-weight:600}
+.me{font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:1px 6px;border-radius:6px;vertical-align:2px}
+.sec{margin:12px 0}
+.sec h4{margin:0 0 2px;font-size:13px;color:var(--muted);font-weight:400;text-transform:uppercase}
+.sec p{margin:0;white-space:pre-wrap;max-width:65ch}
+.verse{margin:12px 0 4px;padding:12px 14px;border-radius:10px;background:var(--fill)}
+.verse p{margin:0;font-family:var(--font-verse);font-size:17px;line-height:1.7;white-space:pre-wrap}
+.verse cite{display:block;font-style:normal;font-size:13px;color:var(--accent);font-weight:600;margin-top:4px}
+.entry-foot{display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:.5px solid var(--line);flex-wrap:wrap}
+.amen{border:0;background:var(--accent-soft);color:var(--accent);border-radius:999px;height:32px;padding:0 14px;font-weight:600;cursor:pointer;font-size:15px}
+.amen b{font-variant-numeric:tabular-nums;margin-left:2px}
+.amen.on{background:var(--accent);color:var(--on-accent)}
+.amen:active{opacity:.7}
+.amen:disabled{cursor:default;opacity:.5}
+.amen-who{font-size:13px;color:var(--muted)}
+.comments{display:grid;gap:8px;margin-top:12px}
+.cmt{margin:0;font-size:15px;display:flex;align-items:baseline;gap:4px;flex-wrap:wrap}
+.cmt b{font-weight:600}
+.x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0 4px;margin-left:auto}
+.cmt-form{display:flex;gap:8px;margin-top:2px;align-items:center}
+.cmt-form input{height:36px;padding:6px 14px;border-radius:999px;font-size:15px}
+
+/* log */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tile{background:var(--surface);border-radius:16px;padding:14px}
+.tile b{display:block;font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15;font-family:var(--font-display)}
+.tile span{font-size:13px;color:var(--muted)}
+.tile.dawn b{color:var(--dawn)}
+.calhead{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;margin-bottom:8px}
+.calhead h2{margin:0;text-align:left;font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;grid-column:1;grid-row:1;white-space:nowrap}
+.calhead{grid-template-columns:1fr 40px 40px}
+.calhead #calPrev{grid-column:2;grid-row:1}
+.calhead #calNext{grid-column:3;grid-row:1}
+.calhead button{height:40px;border:0;background:none;font-size:24px;cursor:pointer;color:var(--accent)}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px 0}
+.wd{text-align:center;font-size:12px;font-weight:600;color:var(--muted);padding:2px 0 6px;text-transform:uppercase}
+.wd.sun{color:var(--red)}
+.day{border:0;background:none;display:grid;justify-items:center;gap:2px;padding:4px 0;cursor:pointer;font-size:17px;font-variant-numeric:tabular-nums;min-width:0}
+.day .n{width:36px;height:36px;border-radius:50%;display:grid;place-items:center}
+.day.mine .n{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.day.today .n{background:var(--red);color:#fff;font-weight:600}
+.day.future{color:var(--muted)}
+.dots{display:flex;gap:2px;justify-content:center;min-height:6px}
+.dots i{width:5px;height:5px;border-radius:50%;display:block}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:.5px solid var(--line);font-size:13px;color:var(--muted)}
+.results{display:grid;margin-top:10px}
+.result{display:grid;gap:2px;text-align:left;border:0;border-bottom:.5px solid var(--line);background:none;padding:10px 2px;cursor:pointer;width:100%}
+.result:last-child{border-bottom:0}
+.result .r-top{font-size:13px;color:var(--muted)}
+.result p{margin:0;font-size:15px}
+mark{background:var(--dawn-soft);color:var(--ink);border-radius:3px;padding:0 2px}
+
+/* chips + segmented */
+.cardsbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:0;background:var(--surface);border-radius:999px;height:32px;padding:0 14px;font-size:15px;cursor:pointer;display:inline-flex;align-items:center}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--fill);border-radius:9px;padding:2px;gap:2px}
+.seg .chip{background:none;border-radius:7px;height:30px;justify-content:center;font-size:14px;font-weight:500}
+.seg .chip[aria-pressed="true"]{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04)}
+:root[data-theme="dark"] .seg .chip[aria-pressed="true"]{background:#636366}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .seg .chip[aria-pressed="true"]{background:#636366} }
+
+/* verse cards */
+.versegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.vcard{text-align:left;width:100%;background:var(--surface);border:0;border-radius:16px;padding:18px;display:grid;gap:10px;cursor:pointer;position:relative;overflow:hidden}
+.vcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--who)}
+.vcard .ref{font-size:20px;font-weight:700;color:var(--ink)}
+.vcard .txt{font-family:var(--font-verse);font-size:17px;line-height:1.7;white-space:pre-wrap;transition:filter .2s}
+.recite .vcard:not(.open) .txt{filter:blur(7px);user-select:none}
+.vcard .who{font-size:13px;color:var(--muted)}
+.recite-hint{font-size:13px;color:var(--muted);margin:0 4px}
+
+/* family */
+.members{display:grid}
+.mrow{display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;padding:10px 0;border-bottom:.5px solid var(--line)}
+.mrow:last-child{border-bottom:0}
+.mrow .num2{font-size:15px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+.swatches{display:flex;gap:12px;flex-wrap:wrap}
+.sw{width:32px;height:32px;border-radius:50%;border:0;cursor:pointer;padding:0;box-shadow:inset 0 0 0 2px var(--surface)}
+.sw[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--surface),0 0 0 2px var(--accent)}
+.help ol{margin:8px 0 0;padding-left:20px;display:grid;gap:8px;font-size:15px}
+.help h2,.fam h2{font-size:20px;font-weight:700;margin:0}
+
+/* prayer */
+.lock{font-size:11px;font-weight:600;color:var(--muted);background:var(--fill);padding:1px 6px;border-radius:6px;vertical-align:2px}
+.pr-text{margin:4px 0 0;white-space:pre-wrap;font-size:17px;max-width:65ch}
+.answer{margin-top:12px;padding:10px 12px;border-radius:10px;background:rgba(52,199,89,.14)}
+.answer b{color:var(--green);font-size:13px;font-weight:600}
+.answer p{margin:4px 0 0;font-size:15px}
+.ans-form{display:grid;gap:10px;margin-top:12px;padding:12px;border-radius:12px;background:var(--fill)}
+.ans-form input{background:var(--surface)}
+.pr-acts{display:flex;gap:14px;margin-left:auto;flex-wrap:wrap}
+.link.danger{color:var(--red)}
+.pr-form{display:grid;gap:12px}
+.pr-form h2{font-size:20px;font-weight:700;margin:0}
+.pr-row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.pr-date{display:inline-flex;align-items:center;gap:10px;font-size:17px}
+.pr-date input{background:var(--fill);border:0;border-radius:8px;padding:6px 10px;font-size:15px;font-variant-numeric:tabular-nums;color:var(--accent)}
+#prFilters{display:grid;gap:10px}
+
+/* tab bar */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+.tabs-inner{display:grid;grid-template-columns:repeat(5,1fr);max-width:680px;margin:0 auto}
+.tab{border:0;background:none;color:#8E8E93;padding:7px 0 6px;display:grid;justify-items:center;gap:1px;font-size:10px;font-weight:500;cursor:pointer;letter-spacing:.01em}
+.tab svg{width:26px;height:26px}
+.tab[aria-current="page"]{color:var(--accent)}
+.tab[aria-current="page"] svg{fill:currentColor;fill-opacity:.2}
+
+.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--bar);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);color:var(--ink);padding:10px 18px;border-radius:999px;font-size:15px;font-weight:500;z-index:10;max-width:calc(100% - 32px);box-shadow:0 8px 30px rgba(0,0,0,.18)}
+@media (max-width:380px){ .stats{grid-template-columns:1fr 1fr} .tile.wide{grid-column:span 2} .plan-ref{font-size:24px} h1{font-size:30px} }
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+
+/* sign-in / family setup */
+.gate{min-height:100%;display:grid;place-items:center;padding:calc(32px + env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom))}
+.gate-inner{width:100%;max-width:420px;display:grid;gap:16px}
+.gate-inner > section{display:grid;gap:14px}
+.gate-logo{width:84px;height:84px;border-radius:19px;justify-self:center;box-shadow:0 6px 20px rgba(0,0,0,.12)}
+.gate-title{text-align:center;font-size:30px}
+.gate-sub{text-align:center;margin:-8px 0 8px;color:var(--muted);font-size:15px}
+.gform{display:grid;gap:8px}
+.gform h2{font-size:20px;font-weight:700;margin:0 0 4px}
+.gform .lbl{margin-top:4px}
+.gform .btn{margin-top:8px}
+.gbtn{width:100%;background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);gap:10px}
+.gate-msg{color:var(--red);font-size:15px;text-align:center;margin:0;min-height:1em}
+.invite{margin:0;padding:10px 12px;border-radius:10px;background:var(--fill);font-size:13px;font-family:ui-monospace,Menlo,monospace;word-break:break-all;user-select:all}
+</style>
+</head>
+<body>
+<div id="gate" class="gate">
+  <div class="gate-inner">
+    <img class="gate-logo" src="icons/icon-192.png" alt="" width="84" height="84">
+    <h1 class="gate-title">우리 가족 큐티</h1>
+    <p class="gate-sub">가족이 같은 말씀을 읽고, 묵상과 기도제목을 함께 나누는 곳</p>
+
+    <section id="g-loading"><p class="meta" style="text-align:center">불러오는 중…</p></section>
+
+    <section id="g-config" hidden>
+      <div class="card"><p style="margin:0">아직 Firebase 설정이 들어가지 않았어요. <b>public/config.js</b>에 Firebase 프로젝트의 설정 값을 붙여 넣은 뒤 다시 배포해 주세요. 자세한 방법은 함께 드린 안내서(README)에 있어요.</p></div>
+    </section>
+
+    <section id="g-inapp" hidden>
+      <div class="card">
+        <p style="margin:0 0 12px">카카오톡·네이버 같은 앱 안의 브라우저에서는 구글 로그인이 막혀 있어요. 오른쪽 위 메뉴에서 <b>다른 브라우저로 열기</b>(사파리·크롬)를 눌러 주세요.</p>
+        <button type="button" class="btn line" id="copyHere">이 주소 복사하기</button>
+      </div>
+    </section>
+
+    <section id="g-signin" hidden>
+      <button type="button" class="btn gbtn" id="googleBtn">
+        <svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+        Google로 계속하기</button>
+      <p class="meta" id="inviteNote" hidden style="text-align:center;margin:0">가족 초대 링크로 들어오셨어요. 로그인하면 바로 참여할 수 있어요.</p>
+    </section>
+
+    <section id="g-family" hidden>
+      <div class="card gform" id="joinCard">
+        <h2>초대받았어요</h2>
+        <label class="lbl" for="joinInput">받은 초대 링크</label>
+        <input type="text" id="joinInput" placeholder="카톡으로 받은 링크를 붙여 넣으세요">
+        <label class="lbl" for="joinNick">내 호칭</label>
+        <input type="text" id="joinNick" maxlength="12" placeholder="예: 엄마">
+        <button type="button" class="btn" id="joinFam">가족에 참여하기</button>
+      </div>
+      <div class="card gform">
+        <h2>새 가족 만들기</h2>
+        <label class="lbl" for="famName">가족 이름</label>
+        <input type="text" id="famName" maxlength="30" placeholder="예: 정씨네 가족">
+        <label class="lbl" for="myNick">내 호칭</label>
+        <input type="text" id="myNick" maxlength="12" placeholder="예: 아빠">
+        <button type="button" class="btn ghost" id="createFam">가족 만들기</button>
+      </div>
+      <button type="button" class="link" id="signOut1" style="justify-self:center">다른 구글 계정으로 로그인</button>
+    </section>
+
+    <p class="gate-msg" id="gateMsg" role="alert"></p>
+  </div>
+</div>
+<div id="app" hidden>
+  <header class="top">
+    <div class="brand">
+      <div><p class="app-sub">우리 가족 큐티</p><h1 id="pageTitle">오늘의 큐티</h1></div>
+      <span class="streak" id="streak"></span>
+    </div>
+    <div class="datenav" id="datenav">
+      <button type="button" id="prevDay" aria-label="전날">‹</button>
+      <label class="datelabel" for="datePick"><span id="dateText"></span><input type="date" id="datePick" aria-label="날짜 선택"></label>
+      <button type="button" id="nextDay" aria-label="다음 날">›</button>
+    </div>
+    <div class="status" id="status" hidden></div>
+  </header>
+
+  <main>
+    <!-- 오늘 -->
+    <section class="view" id="view-today">
+      <article class="card plan" id="planCard"></article>
+
+      <article class="card" id="myCard">
+        <p class="ro-note" id="roNote" hidden>보기 전용이에요. 묵상을 쓰려면 페이지 소유자에게 편집자로 초대해 달라고 요청하세요.</p>
+        <div class="my-head">
+          <div>
+            <h2>나의 묵상</h2>
+            <p class="save-state" id="saveState"></p>
+          </div>
+        </div>
+        <form id="qtForm" autocomplete="off">
+          <div style="margin-bottom:16px">
+            <label class="lbl" for="f-passage">본문</label>
+            <input type="text" id="f-passage" maxlength="120" placeholder="예: 요한복음 15:1–8">
+          </div>
+          <div class="steps">
+            <div class="step"><span class="num">1</span><div>
+              <h3><label for="f-observe">관찰</label></h3>
+              <p class="hint">본문에서 눈에 들어온 단어, 사건, 하나님의 모습</p>
+              <textarea id="f-observe" maxlength="4000"></textarea></div></div>
+            <div class="step"><span class="num">2</span><div>
+              <h3><label for="f-insight">묵상</label></h3>
+              <p class="hint">이 말씀이 오늘 나에게 하시는 이야기</p>
+              <textarea id="f-insight" maxlength="4000"></textarea></div></div>
+            <div class="step"><span class="num">3</span><div>
+              <h3><label for="f-apply">적용</label></h3>
+              <p class="hint">오늘 실천할 구체적인 한 가지</p>
+              <textarea id="f-apply" maxlength="4000"></textarea></div></div>
+            <div class="step"><span class="num">4</span><div>
+              <h3><label for="f-prayer">기도</label></h3>
+              <p class="hint">말씀을 붙들고 드리는 짧은 기도</p>
+              <textarea id="f-prayer" maxlength="4000"></textarea></div></div>
+            <div class="verse-box">
+              <label class="lbl" for="f-verseRef" style="margin:0">기억할 구절 · 말씀카드에 모여요</label>
+              <input type="text" id="f-verseRef" maxlength="60" placeholder="장절 (예: 요 15:5)">
+              <textarea id="f-verseText" maxlength="1000" placeholder="구절 내용" style="min-height:60px"></textarea>
+            </div>
+          </div>
+          <div class="form-foot">
+            <label class="switch"><input type="checkbox" id="f-share" checked> 가족과 나누기</label>
+            <div class="row">
+              <button type="button" class="btn line small" id="delBtn" hidden>삭제</button>
+              <button type="submit" class="btn" id="saveBtn">저장</button>
+            </div>
+          </div>
+        </form>
+      </article>
+
+      <section id="familyList" class="view"></section>
+    </section>
+
+    <!-- 기도제목 -->
+    <section class="view" id="view-pray" hidden>
+      <form class="card pr-form" id="prForm" autocomplete="off">
+        <h2 id="prFormTitle">기도제목 적기</h2>
+        <label class="lbl" for="pr-text" style="margin:0">기도제목</label>
+        <textarea id="pr-text" maxlength="500" placeholder="예: 이번 주 프로젝트를 지혜롭게 마무리하도록"></textarea>
+        <div class="pr-row">
+          <label class="pr-date" for="pr-date">적은 날 <input type="date" id="pr-date"></label>
+          <label class="switch"><input type="checkbox" id="pr-share" checked> 가족과 나누기</label>
+        </div>
+        <div class="row" style="justify-content:flex-end">
+          <button type="button" class="btn line" id="prCancel" hidden>취소</button>
+          <button type="submit" class="btn" id="prSave">기도제목 추가</button>
+        </div>
+      </form>
+      <div id="prFilters"></div>
+      <div class="view" id="prList"></div>
+    </section>
+
+    <!-- 기록 -->
+    <section class="view" id="view-log" hidden>
+      <div class="stats" id="stats"></div>
+      <div class="card">
+        <div class="calhead">
+          <button type="button" id="calPrev" aria-label="이전 달">‹</button>
+          <h2 id="calTitle"></h2>
+          <button type="button" id="calNext" aria-label="다음 달">›</button>
+        </div>
+        <div class="calgrid" id="calGrid"></div>
+        <div class="legend" id="calLegend"></div>
+      </div>
+      <div class="card">
+        <label class="lbl" for="search">지난 묵상 찾기</label>
+        <input type="search" id="search" placeholder="본문, 단어로 검색 (예: 포도나무)">
+        <div class="results" id="results"></div>
+      </div>
+    </section>
+
+    <!-- 말씀카드 -->
+    <section class="view" id="view-cards" hidden>
+      <div class="cardsbar">
+        <div class="chips" id="cardFilters"></div>
+        <label class="switch"><input type="checkbox" id="recite"> 암송 모드</label>
+      </div>
+      <p class="recite-hint" id="reciteHint" hidden>장절을 보고 떠올려 본 뒤 카드를 눌러 확인하세요.</p>
+      <div class="versegrid" id="verseGrid"></div>
+    </section>
+
+    <!-- 가족 -->
+    <section class="view" id="view-family" hidden>
+      <div class="card fam">
+        <h2>내 호칭</h2>
+        <p class="meta" style="margin:4px 0 10px">가족 나눔과 달력에 이 이름과 색으로 보여요.</p>
+        <input type="text" id="nick" maxlength="12" placeholder="예: 아빠, 엄마, 하윤">
+        <div class="swatches" id="swatches" style="margin-top:12px"></div>
+        <div class="row" style="margin-top:14px"><button type="button" class="btn" id="nickSave">저장</button></div>
+      </div>
+      <div class="card fam">
+        <h2>가족 구성원</h2>
+        <div class="members" id="members" style="margin-top:8px"></div>
+      </div>
+      <div class="card fam">
+        <h2 id="famTitle">가족 초대하기</h2>
+        <p class="meta" style="margin:4px 0 10px">이 링크를 카카오톡으로 보내면, 가족이 구글로 로그인한 뒤 바로 참여해요.</p>
+        <p class="invite" id="inviteLink"></p>
+        <div class="row" style="margin-top:12px">
+          <button type="button" class="btn" id="shareInvite">초대 링크 보내기</button>
+          <button type="button" class="btn line" id="copyInvite">복사</button>
+        </div>
+        <button type="button" class="link" id="regenCode" hidden style="margin-top:6px;text-align:left">초대 링크 새로 만들기 (이전 링크는 더 이상 못 써요)</button>
+      </div>
+      <div class="card fam">
+        <h2>계정</h2>
+        <p class="meta" id="acctLine" style="margin:4px 0 12px"></p>
+        <div class="row" style="justify-content:space-between">
+          <button type="button" class="btn line" id="signOut">로그아웃</button>
+          <button type="button" class="link danger" id="leaveFam">가족에서 나가기</button>
+        </div>
+        <p class="meta" style="margin:14px 0 0">아이폰 홈 화면에 앱처럼 두려면 사파리에서 공유 버튼 → '홈 화면에 추가'를 누르세요.</p>
+        <p class="meta" id="modeLine" style="margin:6px 0 0"></p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabs" aria-label="화면 전환">
+    <div class="tabs-inner">
+      <button type="button" class="tab" data-view="today" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H12v17H6.5A2.5 2.5 0 0 0 4 22.5z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H12v17h5.5a2.5 2.5 0 0 1 2.5 2.5z"/></svg>오늘</button>
+      <button type="button" class="tab" data-view="pray">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>기도</button>
+      <button type="button" class="tab" data-view="log">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>기록</button>
+      <button type="button" class="tab" data-view="cards">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="14" height="17" rx="2"/><path d="M4 7v12a2 2 0 0 0 2 2h10"/><path d="M10 9h6M10 13h4"/></svg>말씀카드</button>
+      <button type="button" class="tab" data-view="family">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9.5" r="2.4"/><path d="M3 20c.6-3.4 3-5.5 6-5.5s5.4 2.1 6 5.5M15 15.2c2.6-.4 5 1.2 5.8 4.3"/></svg>가족</button>
+    </div>
+  </nav>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="config.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
