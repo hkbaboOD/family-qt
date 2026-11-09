@@ -233,8 +233,9 @@ function renderPlan(){
       (typeof p.uid === 'string' ? '<p class="meta" style="margin:6px 0 0">정한 사람 · <span class="dot" style="background:' + colorOf(p.uid) + '"></span>' + esc(nameOf(p.uid)) + '</p>' : '') +
       (sumLink ? '<div style="margin-top:8px">' + sumLink + '</div>' : '');
   }
-  if (p && str(p.passage)) html += studyHTML(str(p.passage, 120));
+  if (p && str(p.passage)) html += readLinkHTML(str(p.passage, 120));
   setHTML(el, html);
+  renderBg();
 }
 
 /* ---------- bible link & background notes ---------- */
@@ -256,7 +257,7 @@ const BOOKS = [
 ];
 const BOOK_KEYS = BOOKS.flatMap(([c, full, ab]) => [[full, c, full], [ab, c, full]]).sort((a, b) => b[0].length - a[0].length);
 function parsePassage(ref){
-  const s = String(ref || '').replace(/\s+/g, ' ').trim()
+  const s = String(ref || '').replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim()
     .replace(/(\d+)\s*(?:장|편)\s*(\d+)/g, '$1:$2').replace(/(\d)\s*(?:장|편|절)/g, '$1');
   const hit = BOOK_KEYS.find(([k]) => s.startsWith(k) && /^서?\s*\d/.test(s.slice(k.length)));
   if (!hit) return null;
@@ -304,17 +305,36 @@ function verseHTML(ref){
   return '<details class="bv-box" id="' + id + '"' + open + '>' + head + '<div class="bv-list">' + body + '</div><p class="src" style="margin:10px 0 0">개역한글판(1961) · 저작권 만료 본문</p></details>';
 }
 
-function studyHTML(passage){
+const BSK = 'https://www.bskorea.or.kr/bible/korbibReadpage.php?version=GAE';
+function readLinkHTML(passage){
   const ref = parsePassage(passage); if (!ref) return '';
-  let html = verseHTML(ref) + '<div class="study-links"><a class="ext" href="https://www.bskorea.or.kr/bible/korbibReadpage.php?version=GAE&amp;book=' + ref.code + '&amp;chap=' + ref.ch + '" target="_blank" rel="noopener">' + esc(ref.name + ' ' + ref.ch + '장') + ' 개역개정으로 읽기 · 대한성서공회 ↗</a></div>';
+  let html = '<div class="study-links">';
+  for (let c = ref.ch; c <= ref.endCh; c++){
+    const sec = ref.sv ? (c === ref.ch ? ref.sv : 1) : 0;
+    const unit = ref.code === 'psa' ? '편' : '장';
+    let label = ref.name + ' ' + c + unit;
+    if (ref.sv){
+      const from = c === ref.ch ? ref.sv : 1;
+      const to = c === ref.endCh ? ref.ev : 0;
+      if (!to) label = from === 1 ? ref.name + ' ' + c + unit : ref.name + ' ' + c + ':' + from + '~';
+      else label = ref.name + ' ' + c + ':' + from + (to !== from ? '–' + to : '');
+    }
+    html += '<a class="read-btn" href="' + BSK + '&amp;book=' + ref.code + '&amp;chap=' + c + (sec ? '&amp;sec=' + sec : '') + '" target="_blank" rel="noopener">' +
+      '<span class="rb-tag">개역개정</span><span class="rb-ref">' + esc(label) + '</span><span class="rb-go">대한성서공회에서 읽기 ↗</span></a>';
+  }
+  return html + '</div>';
+}
+function bgHTML(passage){
+  const ref = parsePassage(passage); if (!ref) return '';
+  let html = '';
   for (let c = ref.ch; c <= ref.endCh; c++){
     const n = S.notes && S.notes[ref.code + '-' + c];
     if (!n || typeof n !== 'object') continue;
     const id = 'bg-' + ref.code + '-' + c;
     const open = S.bgClosed && S.bgClosed.has(id) ? '' : ' open';
-    html += '<details class="bg-note" id="' + id + '"' + open + '><summary><span class="bg-tag">시대배경·역사</span>' + esc(str(n.title, 120)) + '</summary>' +
+    html += '<details class="bg-note" id="' + id + '"' + open + '><summary>' + esc(str(n.title, 120)) + '</summary>' +
       (str(n.era) ? '<p class="bg-era">' + esc(str(n.era, 300)) + '</p>' : '') +
-      (str(n.background) ? '<p class="bg-body">' + esc(str(n.background, 3000)) + '</p>' : '') +
+      (str(n.background) ? '<h4 class="bg-h">시대배경</h4><p class="bg-body">' + esc(str(n.background, 3000)) + '</p>' : '') +
       (Array.isArray(n.facts) && n.facts.length ? '<h4 class="bg-h">역사적 사실</h4><ul class="bg-facts">' + n.facts.map(f => '<li>' + esc(str(f, 800)) + '</li>').join('') + '</ul>' : '') +
       ((Array.isArray(n.places) && n.places.length) || (Array.isArray(n.people) && n.people.length) ?
         '<div class="bg-chips">' + (n.places || []).map(x => '<span class="bg-chip place">' + esc(str(x, 60)) + '</span>').join('') + (n.people || []).map(x => '<span class="bg-chip person">' + esc(str(x, 60)) + '</span>').join('') + '</div>' : '') +
@@ -322,8 +342,15 @@ function studyHTML(passage){
   }
   return html;
 }
+function renderBg(){
+  const el = $('#bgCard'); if (!el) return;
+  const p = S.plans.get(S.date);
+  const inner = p && str(p.passage) ? bgHTML(str(p.passage, 120)) : '';
+  el.hidden = !inner;
+  setHTML(el, inner ? '<p class="eyebrow">시대배경 · 역사적 사실</p>' + inner + '<p class="src" style="margin:12px 0 0">이 앱을 위해 따로 정리한 설명이에요. 성경 본문·매일성경 해설과는 별개예요.</p>' : '');
+}
 async function loadNotes(){
-  try { const r = await fetch('notes.json', {cache:'no-cache'}); if (r.ok){ S.notes = await r.json(); $('#planCard')._h = null; schedule(); } } catch(e){}
+  try { const r = await fetch('notes.json', {cache:'no-cache'}); if (r.ok){ S.notes = await r.json(); $('#planCard')._h = null; renderBg(); schedule(); } } catch(e){}
 }
 async function savePlan(e){
   e.preventDefault();

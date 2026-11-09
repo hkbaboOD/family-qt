@@ -130,7 +130,14 @@ label.lbl{display:block;font-size:13px;font-weight:400;color:var(--muted);margin
 .bv-ch:first-child{margin-top:8px}
 .bv-wait{color:var(--muted);font-size:15px;margin:8px 0}
 .bg-tag.txt{background:var(--accent);color:#fff}
-.study-links{margin-top:10px;padding-top:10px;border-top:.5px solid var(--line)}
+.study-links{margin-top:12px;display:grid;gap:8px}
+.read-btn{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"tag ref" "tag go";column-gap:10px;align-items:center;text-decoration:none;color:var(--ink);background:var(--fill);border-radius:12px;padding:12px 14px;min-height:44px}
+.read-btn:active{opacity:.6}
+.rb-tag{grid-area:tag;font-size:12px;font-weight:600;color:var(--on-accent);background:var(--accent);padding:3px 9px;border-radius:999px}
+.rb-ref{grid-area:ref;font-weight:600;font-size:17px}
+.rb-go{grid-area:go;font-size:14px;color:var(--accent)}
+.bg-card .bg-note{margin-top:8px;background:none;padding:0;border-radius:0}
+.bg-card .bg-note + .bg-note{margin-top:16px;padding-top:16px;border-top:.5px solid var(--line)}
 .bg-note{margin-top:12px;background:var(--fill);border-radius:12px;padding:12px 14px}
 .bg-note summary{cursor:pointer;list-style:none;font-weight:600;font-size:16px;line-height:1.4;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
 .bg-note summary::-webkit-details-marker{display:none}
@@ -371,6 +378,7 @@ mark{background:var(--dawn-soft);color:var(--ink);border-radius:3px;padding:0 2p
     <!-- 오늘 -->
     <section class="view" id="view-today">
       <article class="card plan" id="planCard"></article>
+      <article class="card bg-card" id="bgCard" hidden></article>
 
       <article class="card" id="myCard">
         <p class="ro-note" id="roNote" hidden>보기 전용이에요. 묵상을 쓰려면 페이지 소유자에게 편집자로 초대해 달라고 요청하세요.</p>
