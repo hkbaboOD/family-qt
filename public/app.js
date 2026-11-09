@@ -30,7 +30,7 @@ const S = {
   prTab:'active', prWho:'all', editPrayer:null, answering:null, confirmPr:null,
   fid:null, family:null, fbUser:null, unsubs:[], confirmLeave:false,
   date: todayStr(), view:'today', calMonth: todayStr().slice(0,7),
-  cardFilter:'all', recite:false, open:new Set(), editingPlan:false, planOpen:false, notes:null, bgClosed:new Set(),
+  cardFilter:'all', recite:false, open:new Set(), editingPlan:false, planOpen:false, notes:null, readings:null, bgClosed:new Set(),
   dirty:false, formKey:'', confirmDel:false, pickColor:null, raf:0
 };
 
@@ -137,7 +137,7 @@ function loadFormFor(date){
   if (draft && draft.v && (!src || (draft.t || 0) > (src.updatedAt || 0))){ src = draft.v; note = '저장하지 않은 작성 내용을 불러왔어요.'; S.dirty = true; }
   else { S.dirty = false; if (draft) lsDel(draftKey(date)); }
   FIELDS.forEach(f => { $('#f-' + f).value = src ? str(src[f], MAX[f]) : ''; });
-  const plan = S.plans.get(date);
+  const plan = planFor(date);
   if (!$('#f-passage').value && plan) $('#f-passage').value = str(plan.passage, 120);
   $('#f-share').checked = m ? m.shared : !(draft && draft.v && draft.v.share === false);
   S.formKey = formKeyFor(date); S.confirmDel = false;
@@ -148,7 +148,7 @@ function loadFormFor(date){
 function syncForm(){
   if (S.dirty) return;
   if (formKeyFor(S.date) !== S.formKey) { loadFormFor(S.date); return; }
-  const plan = S.plans.get(S.date);
+  const plan = planFor(S.date);
   if (plan && !$('#f-passage').value) $('#f-passage').value = str(plan.passage, 120);
 }
 let draftT = 0;
@@ -194,9 +194,17 @@ async function removeMine(){
 }
 
 /* ---------- plan card ---------- */
+function readingPlan(date){
+  const r = S.readings && S.readings[date];
+  return typeof r === 'string' && r ? {passage:r.slice(0, 120), source:'읽기표', auto:true} : null;
+}
+function planFor(date){ return S.plans.get(date) || readingPlan(date); }
+async function loadReadings(){
+  try { const r = await fetch('readings.json', {cache:'no-cache'}); if (r.ok){ S.readings = await r.json(); $('#planCard')._h = null; schedule(); } } catch(e){}
+}
 function renderPlan(){
   const el = $('#planCard');
-  const p = S.plans.get(S.date);
+  const p = planFor(S.date);
   const label = S.date === todayStr() ? '오늘 함께 읽을 본문' : fmtDate(S.date) + ' 함께 읽을 본문';
   if (S.editingPlan){
     if (el.dataset.mode === 'edit') return;
@@ -219,6 +227,10 @@ function renderPlan(){
   if (!p || !str(p.passage)){
     html = '<p class="eyebrow">' + esc(label) + '</p><p class="plan-empty">가족이 함께 묵상할 본문이 아직 정해지지 않았어요.</p>' +
       '<div class="row">' + (S.canWrite ? '<button type="button" class="btn ghost" data-act="editPlan">본문 정하기</button>' : '') + sumLink + '</div>';
+  } else if (p.auto){
+    html = '<div class="plan-head"><p class="eyebrow">' + esc(label) + '</p>' + (S.canWrite ? '<button type="button" class="link" data-act="editPlan">다른 본문 정하기</button>' : '') + '</div>' +
+      '<h2 class="plan-ref">' + esc(str(p.passage, 120)) + '</h2>' +
+      '<div class="row" style="justify-content:space-between;margin-top:6px"><span class="src">성서유니온 매일성경 읽기표</span>' + sumLink + '</div>';
   } else if (p.source === '매일성경'){
     html = '<div class="plan-head"><p class="eyebrow">' + esc(label) + '</p>' + (S.canWrite ? '<button type="button" class="link" data-act="editPlan">수정</button>' : '') + '</div>' +
       '<h2 class="plan-ref">' + esc(str(p.passage, 120)) + '</h2>' +
@@ -344,7 +356,7 @@ function bgHTML(passage){
 }
 function renderBg(){
   const el = $('#bgCard'); if (!el) return;
-  const p = S.plans.get(S.date);
+  const p = planFor(S.date);
   const inner = p && str(p.passage) ? bgHTML(str(p.passage, 120)) : '';
   el.hidden = !inner;
   setHTML(el, inner ? '<p class="eyebrow">시대배경 · 역사적 사실</p>' + inner + '<p class="src" style="margin:12px 0 0">이 앱을 위해 따로 정리한 설명이에요. 성경 본문·매일성경 해설과는 별개예요.</p>' : '');
@@ -936,7 +948,7 @@ async function leaveFamily(){
 /* ---------- boot ---------- */
 function init(){
   bind();
-  loadNotes();
+  loadNotes(); loadReadings();
   $('#authForm').addEventListener('submit', idAuth);
   $('#tabLogin').addEventListener('click', () => setAuthMode(false));
   $('#tabSignup').addEventListener('click', () => setAuthMode(true));
