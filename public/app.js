@@ -746,11 +746,13 @@ function bind(){
 
 /* ---------- firebase data ---------- */
 function sub(q, key){
-  S.unsubs.push(onSnapshot(q, snap => {
+  // entries는 메타데이터 변경도 받아야, 기록이 0개일 때도 '캐시 → 서버 확인' 전환을 감지할 수 있음
+  const opts = key === 'entries' ? {includeMetadataChanges:true} : {};
+  S.unsubs.push(onSnapshot(q, opts, snap => {
     const m = new Map();
     snap.docs.forEach(d => { const v = d.data(); if (v && typeof v === 'object') m.set(d.id, v); });
     S[key] = m;
-    if (key === 'entries' && !snap.metadata.fromCache && S.mode === 'loading'){ S.mode = 'db'; clearTimeout(S.timer); status(''); }
+    if (!snap.metadata.fromCache && S.mode === 'loading'){ S.mode = 'db'; clearTimeout(S.timer); status(''); }
     schedule();
   }, err => {
     clearTimeout(S.timer); if (S.mode === 'loading') S.mode = 'db';
