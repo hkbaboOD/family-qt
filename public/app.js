@@ -131,9 +131,10 @@ function applyKind(){
   document.querySelectorAll('.k-share').forEach(e => { e.textContent = josa(k, '과/와') + ' 나누기'; });
   document.querySelectorAll('.k-word').forEach(e => { e.textContent = k; });
   $('#memTitle').textContent = k + ' 구성원';
-  $('#tabGroup').textContent = k.length <= 4 ? k : '공동체';
-  if (S.view === 'family') $('#pageTitle').textContent = k;
+  $('#tabGroup').textContent = '공동체';
+  if (S.view === 'family') $('#pageTitle').textContent = groupTitle();
 }
+function groupTitle(){ return (S.family && str(S.family.name, 30)) || kind(); }
 function syncKindChips(wrap){
   const inp = $('#' + wrap.dataset.target); const v = inp ? inp.value.trim() : '';
   const presets = [...wrap.querySelectorAll('.chip')].map(b => b.dataset.kind).filter(Boolean);
@@ -717,7 +718,7 @@ function setDate(d){
 const TITLES = {today:'오늘의 큐티', pray:'기도제목', log:'기록', cards:'말씀카드', family:'공동체'};
 function setView(v){
   S.view = v;
-  $('#pageTitle').textContent = v === 'family' ? kind() : (TITLES[v] || '');
+  $('#pageTitle').textContent = v === 'family' ? groupTitle() : (TITLES[v] || '');
   ['today','pray','log','cards','family'].forEach(k => { $('#view-' + k).hidden = k !== v; });
   document.querySelectorAll('.tab').forEach(b => { if (b.dataset.view === v) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   if (v === 'family'){ fillNickForm(); fillGroupForm(); S.groupSig = ''; }
