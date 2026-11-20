@@ -1,7 +1,7 @@
 {
-  "name": "우리 가족 큐티",
-  "short_name": "가족 큐티",
-  "description": "가족이 함께 쓰는 큐티 노트와 기도제목",
+  "name": "함께 큐티",
+  "short_name": "함께 큐티",
+  "description": "가족·순·셀·친구와 함께 쓰는 큐티 노트와 기도제목",
   "lang": "ko",
   "start_url": "./",
   "scope": "./",

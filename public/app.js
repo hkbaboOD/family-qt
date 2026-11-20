@@ -1,4 +1,4 @@
-// 우리 가족 큐티 — Firebase(아이디·비밀번호 로그인 + Firestore) 버전
+// 함께 큐티(우리 가족 큐티) — Firebase(아이디·비밀번호 로그인 + Firestore) 버전
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signOut } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 import { initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager, doc, collection, setDoc, getDoc, deleteDoc, onSnapshot, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
@@ -54,7 +54,7 @@ async function attempt(fn, retried){
   catch(e){
     const code = e && e.code;
     if (code === 'unavailable' && !retried){ await new Promise(r => setTimeout(r, 500 + Math.random()*700)); return attempt(fn, true); }
-    if (code === 'permission-denied') toast('권한이 없어요. 가족에 참여한 계정인지 확인해 주세요.');
+    if (code === 'permission-denied') toast('권한이 없어요. ' + kind() + '에 참여한 계정인지 확인해 주세요.');
     else if (code === 'resource-exhausted') toast('오늘 사용량을 넘었어요. 내일 다시 시도해 주세요.');
     else toast('저장하지 못했어요. 연결을 확인한 뒤 다시 눌러 주세요.');
     return false;
@@ -95,7 +95,7 @@ function nameOf(uid){
   const m = member(uid);
   const nick = str(m.nick, 12).trim(); if (nick) return nick;
   const name = str(m.name, 30).trim(); if (name) return name;
-  return uid === S.uid ? '나' : '가족';
+  return uid === S.uid ? '나' : '멤버';
 }
 function colorIdx(uid){
   const c = member(uid).color; if (Number.isInteger(c) && c >= 0 && c < COLORS.length) return c;
@@ -116,7 +116,41 @@ function resolveNames(){}
 function setHTML(el, html){ if (el._h !== html){ el._h = html; el.innerHTML = html; return true; } return false; }
 let toastT = 0;
 function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 2800); }
-function status(msg, kind){ const el = $('#status'); el.textContent = msg || ''; el.hidden = !msg; el.className = 'status' + (kind === 'warn' ? ' warn' : ''); }
+function status(msg, level){ const el = $('#status'); el.textContent = msg || ''; el.hidden = !msg; el.className = 'status' + (level === 'warn' ? ' warn' : ''); }
+
+/* ---------- 공동체 유형(가족·순·셀·교회공동체·친구·직접 입력) ---------- */
+const KIND_DEFAULT = '가족';
+const cleanKind = v => String(v || '').replace(/\s+/g, ' ').trim().slice(0, 10) || KIND_DEFAULT;
+function kind(){ return S.family ? cleanKind(S.family.kind) : KIND_DEFAULT; }
+function hasBatchim(w){ const c = String(w).trim().slice(-1).charCodeAt(0); return c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 !== 0; }
+function josa(w, pair){ const [a, b] = pair.split('/'); return w + (hasBatchim(w) ? a : b); }
+function applyKind(){
+  const k = kind();
+  document.title = '우리 ' + k + ' 큐티';
+  $('#appSub').textContent = '우리 ' + k + ' 큐티';
+  document.querySelectorAll('.k-share').forEach(e => { e.textContent = josa(k, '과/와') + ' 나누기'; });
+  document.querySelectorAll('.k-word').forEach(e => { e.textContent = k; });
+  $('#memTitle').textContent = k + ' 구성원';
+  $('#tabGroup').textContent = k.length <= 4 ? k : '공동체';
+  if (S.view === 'family') $('#pageTitle').textContent = k;
+}
+function syncKindChips(wrap){
+  const inp = $('#' + wrap.dataset.target); const v = inp ? inp.value.trim() : '';
+  const presets = [...wrap.querySelectorAll('.chip')].map(b => b.dataset.kind).filter(Boolean);
+  wrap.querySelectorAll('.chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.kind ? b.dataset.kind === v : !presets.includes(v))));
+}
+function fillGroupForm(){
+  const f = S.family; if (!f) return;
+  $('#setKind').value = cleanKind(f.kind); $('#setName').value = str(f.name, 30);
+  document.querySelectorAll('.kind-chips').forEach(syncKindChips);
+}
+async function saveGroup(){
+  if (!S.family || S.family.ownerUid !== S.uid) return;
+  const k = cleanKind($('#setKind').value);
+  const name = $('#setName').value.trim().slice(0, 30) || '우리 ' + k;
+  const ok = await attempt(() => setDoc(doc(fdb, 'families', S.fid), {kind:k, name}, {merge:true}));
+  if (ok){ toast('공동체 설정을 바꿨어요.'); }
+}
 function schedule(){ if (!S.raf) S.raf = requestAnimationFrame(() => { S.raf = 0; renderAll(); }); }
 function autosize(el){ if (CSS.supports && CSS.supports('field-sizing','content')) return; el.style.height = 'auto'; el.style.height = Math.max(el.scrollHeight + 2, 60) + 'px'; }
 function setSaveState(t){ $('#saveState').textContent = t; }
@@ -142,7 +176,7 @@ function loadFormFor(date){
   $('#f-share').checked = m ? m.shared : !(draft && draft.v && draft.v.share === false);
   S.formKey = formKeyFor(date); S.confirmDel = false;
   $('#delBtn').hidden = !m; $('#delBtn').textContent = '삭제';
-  setSaveState(note || (m ? (m.shared ? '가족과 나눔' : '나만 보기') + ' · ' + timeStr(m.d.updatedAt) + ' 저장' : '아직 작성하지 않았어요'));
+  setSaveState(note || (m ? (m.shared ? josa(kind(), '과/와') + ' 나눔' : '나만 보기') + ' · ' + timeStr(m.d.updatedAt) + ' 저장' : '아직 작성하지 않았어요'));
   document.querySelectorAll('#qtForm textarea').forEach(autosize);
 }
 function syncForm(){
@@ -160,7 +194,7 @@ function flushDraft(){
 }
 function onFormInput(e){
   if (e.target.tagName === 'TEXTAREA') autosize(e.target);
-  S.dirty = true; setSaveState('작성 중 · 저장을 눌러야 가족에게 보여요');
+  S.dirty = true; setSaveState('작성 중 · 저장을 눌러야 ' + kind() + '에게 보여요');
   clearTimeout(draftT); draftT = setTimeout(flushDraft, 600);
 }
 async function save(e){
@@ -177,7 +211,7 @@ async function save(e){
   btn.disabled = !S.canWrite; btn.textContent = '저장';
   if (ok){
     clearTimeout(draftT); lsDel(draftKey(date)); S.dirty = false; S.formKey = '';
-    toast(share ? '가족과 나눴어요.' : '나만 보기로 저장했어요.');
+    toast(share ? josa(kind(), '과/와') + ' 나눴어요.' : '나만 보기로 저장했어요.');
     schedule();
   }
 }
@@ -212,8 +246,8 @@ function renderPlan(){
     el.innerHTML = '<p class="eyebrow">' + esc(label) + '</p>' +
       '<form id="planForm"><div><label class="lbl" for="p-passage">본문 범위</label><input type="text" id="p-passage" maxlength="120" placeholder="예: 요한복음 15:1–8"></div>' +
       '<div><label class="lbl" for="p-title">제목 (선택)</label><input type="text" id="p-title" maxlength="120" placeholder="예: 참포도나무 되신 예수님"></div>' +
-      '<div><label class="lbl" for="p-text">본문 내용 (선택)</label><textarea id="p-text" maxlength="20000" placeholder="성경이나 큐티책 본문을 붙여 넣으면 가족 모두 같이 볼 수 있어요"></textarea></div>' +
-      '<div class="row"><button type="submit" class="btn">가족 본문으로 저장</button><button type="button" class="btn line" data-act="cancelPlan">취소</button></div></form>';
+      '<div><label class="lbl" for="p-text">본문 내용 (선택)</label><textarea id="p-text" maxlength="20000" placeholder="성경이나 큐티책 본문을 붙여 넣으면 ' + esc(kind()) + ' 모두 같이 볼 수 있어요"></textarea></div>' +
+      '<div class="row"><button type="submit" class="btn">함께 읽을 본문으로 저장</button><button type="button" class="btn line" data-act="cancelPlan">취소</button></div></form>';
     if (p){ $('#p-passage').value = str(p.passage, 120); $('#p-title').value = str(p.title, 120); $('#p-text').value = str(p.text, 20000); }
     autosize($('#p-text'));
     $('#p-passage').focus();
@@ -225,7 +259,7 @@ function renderPlan(){
   const linkUrl = p && typeof p.link === 'string' && p.link.indexOf('https://sum.su.or.kr') === 0 ? p.link : (S.date === todayStr() ? SUM : '');
   const sumLink = linkUrl ? '<a class="ext" href="' + esc(linkUrl) + '" target="_blank" rel="noopener">매일성경에서 본문·해설 읽기 ↗</a>' : '';
   if (!p || !str(p.passage)){
-    html = '<p class="eyebrow">' + esc(label) + '</p><p class="plan-empty">가족이 함께 묵상할 본문이 아직 정해지지 않았어요.</p>' +
+    html = '<p class="eyebrow">' + esc(label) + '</p><p class="plan-empty">' + esc(josa(kind(), '이/가')) + ' 함께 묵상할 본문이 아직 정해지지 않았어요.</p>' +
       '<div class="row">' + (S.canWrite ? '<button type="button" class="btn ghost" data-act="editPlan">본문 정하기</button>' : '') + sumLink + '</div>';
   } else if (p.auto){
     html = '<div class="plan-head"><p class="eyebrow">' + esc(label) + '</p>' + (S.canWrite ? '<button type="button" class="link" data-act="editPlan">다른 본문 정하기</button>' : '') + '</div>' +
@@ -375,7 +409,7 @@ async function savePlan(e){
   if (ok){
     S.editingPlan = false;
     if (!S.dirty && !$('#f-passage').value) $('#f-passage').value = passage;
-    toast('가족 본문을 정했어요.'); schedule();
+    toast('함께 읽을 본문을 정했어요.'); schedule();
   }
 }
 
@@ -463,7 +497,7 @@ function renderPray(){
     : (a, b) => writtenOn(b.p).localeCompare(writtenOn(a.p)) || ((b.p.createdAt || 0) - (a.p.createdAt || 0)));
   const el = $('#prList');
   const html = list.length ? list.map(prayerCard).join('')
-    : '<p class="empty">' + (S.prTab === 'done' ? '응답받은 기도제목이 여기에 모여요. 응답받으면 카드에서 \'응답받았어요\'를 눌러 주세요.' : '아직 기도제목이 없어요. 위에 적어서 가족과 함께 기도해 보세요.') + '</p>';
+    : '<p class="empty">' + (S.prTab === 'done' ? '응답받은 기도제목이 여기에 모여요. 응답받으면 카드에서 \'응답받았어요\'를 눌러 주세요.' : '아직 기도제목이 없어요. 위에 적어서 ' + esc(josa(kind(), '과/와')) + ' 함께 기도해 보세요.') + '</p>';
   keepInputs(el, () => setHTML(el, html));
 }
 function resetPrayerForm(){
@@ -495,7 +529,7 @@ async function savePrayer(e){
   if (ok && old && old.shared !== share) await del(old.shared ? 'prayers' : 'pprayers', id);
   btn.disabled = !S.canWrite;
   if (ok){
-    toast(editing ? '기도제목을 고쳤어요.' : (share ? '가족과 기도제목을 나눴어요.' : '나만 보는 기도제목으로 저장했어요.'));
+    toast(editing ? '기도제목을 고쳤어요.' : (share ? josa(kind(), '과/와') + ' 기도제목을 나눴어요.' : '나만 보는 기도제목으로 저장했어요.'));
     resetPrayerForm(); S.prTab = base.answered ? 'done' : 'active'; schedule();
   }
 }
@@ -530,8 +564,8 @@ function renderFamily(){
   const el = $('#familyList');
   const list = sharedList().filter(([, e]) => e.date === S.date)
     .sort((a, b) => ((b[1].uid === S.uid) - (a[1].uid === S.uid)) || ((a[1].updatedAt || 0) - (b[1].updatedAt || 0)));
-  let html = '<h2 class="section-title">가족 나눔 <span class="count">' + list.length + '</span></h2>';
-  if (!list.length) html += '<p class="empty">아직 이 날 나눈 묵상이 없어요. 먼저 나누면 가족이 아멘으로 응답할 수 있어요.</p>';
+  let html = '<h2 class="section-title">' + esc(kind()) + ' 나눔 <span class="count">' + list.length + '</span></h2>';
+  if (!list.length) html += '<p class="empty">아직 이 날 나눈 묵상이 없어요. 먼저 나누면 ' + esc(josa(kind(), '이/가')) + ' 아멘으로 응답할 수 있어요.</p>';
   list.forEach(([id, e]) => { html += entryCard(id, e); });
   if (myPriv(S.date) && !myShared(S.date)) html += '<p class="empty small">내 묵상은 나만 보기로 저장돼 있어요.</p>';
   const kept = {}; let focus = null;
@@ -563,7 +597,7 @@ function renderLog(){
   setHTML($('#stats'),
     '<div class="tile dawn"><b>' + streak() + '일</b><span>연속 묵상</span></div>' +
     '<div class="tile"><b>' + monthMine + '회</b><span>' + mon + '월 나의 묵상</span></div>' +
-    '<div class="tile wide"><b>' + fam + '회</b><span>' + mon + '월 가족 전체</span></div>');
+    '<div class="tile wide"><b>' + fam + '회</b><span>' + mon + '월 ' + esc(kind()) + ' 전체</span></div>');
   const p = ym.split('-').map(Number), first = new Date(p[0], p[1]-1, 1), days = new Date(p[0], p[1], 0).getDate();
   $('#calTitle').textContent = p[0] + '년 ' + p[1] + '월';
   const by = {};
@@ -642,11 +676,16 @@ function renderFamilyView(){
     '<div><strong>' + esc(nameOf(u)) + (u === S.uid ? ' <span class="me">나</span>' : '') + (S.family && S.family.ownerUid === u ? ' <span class="lock">만든 사람</span>' : '') + '</strong><div class="meta">' + (last[u] ? '최근 나눔 ' + fmtShort(last[u]) : '아직 나눈 묵상 없음') + '</div></div>' +
     '<span class="num2">나눔 ' + (counts[u] || 0) + '회</span></div>').join('') || '<p class="empty">아직 구성원이 없어요.</p>');
   const fam = S.family;
-  $('#famTitle').textContent = fam && str(fam.name, 30) ? str(fam.name, 30) + ' 초대하기' : '가족 초대하기';
+  $('#famTitle').textContent = fam && str(fam.name, 30) ? str(fam.name, 30) + ' 초대하기' : kind() + ' 초대하기';
   $('#inviteLink').textContent = fam && fam.inviteCode ? inviteUrl(S.fid, fam.inviteCode) : '초대 링크를 불러오는 중…';
   $('#regenCode').hidden = !(fam && fam.ownerUid === S.uid);
   $('#acctLine').textContent = S.fbUser ? '아이디 ' + idFromEmail(S.fbUser.email) + ' 로 로그인됨' : '';
-  $('#leaveFam').textContent = S.confirmLeave ? '한 번 더 누르면 가족에서 나가요' : '가족에서 나가기';
+  $('#leaveFam').textContent = S.confirmLeave ? '한 번 더 누르면 ' + kind() + '에서 나가요' : kind() + '에서 나가기';
+  $('#groupSettings').hidden = !(fam && fam.ownerUid === S.uid);
+  if (fam){
+    const sig = cleanKind(fam.kind) + '|' + str(fam.name, 30), ae = document.activeElement && document.activeElement.id;
+    if (S.groupSig !== sig && ae !== 'setKind' && ae !== 'setName'){ fillGroupForm(); S.groupSig = sig; }
+  }
   $('#modeLine').textContent = '나만 보기로 저장한 묵상과 기도제목은 본인 계정에만 저장돼요.';
 }
 
@@ -662,6 +701,7 @@ function renderHeader(){
 }
 function renderAll(){
   renderHeader();
+  applyKind();
   if (S.view === 'today'){ syncForm(); renderPlan(); renderFamily(); }
   else if (S.view === 'pray') renderPray();
   else if (S.view === 'log') renderLog();
@@ -674,13 +714,13 @@ function setDate(d){
   flushDraft(); S.date = d; S.editingPlan = false; S.planOpen = false;
   loadFormFor(d); setView('today');
 }
-const TITLES = {today:'오늘의 큐티', pray:'기도제목', log:'기록', cards:'말씀카드', family:'가족'};
+const TITLES = {today:'오늘의 큐티', pray:'기도제목', log:'기록', cards:'말씀카드', family:'공동체'};
 function setView(v){
   S.view = v;
-  $('#pageTitle').textContent = TITLES[v] || '';
+  $('#pageTitle').textContent = v === 'family' ? kind() : (TITLES[v] || '');
   ['today','pray','log','cards','family'].forEach(k => { $('#view-' + k).hidden = k !== v; });
   document.querySelectorAll('.tab').forEach(b => { if (b.dataset.view === v) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
-  if (v === 'family') fillNickForm();
+  if (v === 'family'){ fillNickForm(); fillGroupForm(); S.groupSig = ''; }
   if (v === 'log' && !S.calMonth) S.calMonth = todayStr().slice(0, 7);
   window.scrollTo(0, 0);
   schedule();
@@ -741,6 +781,17 @@ function bind(){
   $('#regenCode').addEventListener('click', regenCode);
   $('#signOut').addEventListener('click', doSignOut);
   $('#leaveFam').addEventListener('click', leaveFamily);
+  $('#groupSave').addEventListener('click', saveGroup);
+  document.querySelectorAll('.kind-chips').forEach(wrap => {
+    const inp = $('#' + wrap.dataset.target);
+    wrap.addEventListener('click', e => {
+      const b = e.target.closest('.chip'); if (!b) return;
+      if (b.dataset.kind){ inp.value = b.dataset.kind; } else { inp.value = ''; inp.focus(); }
+      syncKindChips(wrap);
+    });
+    inp.addEventListener('input', () => syncKindChips(wrap));
+    syncKindChips(wrap);
+  });
   document.addEventListener('visibilitychange', () => { if (document.hidden) flushDraft(); });
 }
 
@@ -757,7 +808,7 @@ function sub(q, key){
   }, err => {
     clearTimeout(S.timer); if (S.mode === 'loading') S.mode = 'db';
     const c = err && err.code;
-    status(c === 'permission-denied' ? '이 가족의 기록을 볼 권한이 없어요. 초대 링크로 다시 참여해 주세요.' : '기록을 불러오지 못했어요. 인터넷 연결을 확인한 뒤 새로고침해 주세요.', 'warn');
+    status(c === 'permission-denied' ? '이 ' + kind() + '의 기록을 볼 권한이 없어요. 초대 링크로 다시 참여해 주세요.' : '기록을 불러오지 못했어요. 인터넷 연결을 확인한 뒤 새로고침해 주세요.', 'warn');
     schedule();
   }));
 }
@@ -858,40 +909,41 @@ function prepFamilyGate(inv){
   $('#myNick').placeholder = '예: 아빠' + (nm ? ' (비우면 ' + nm + ')' : '');
   if (inv){
     $('#joinInput').value = inviteUrl(inv.fid, inv.code);
-    $('#joinCard').querySelector('h2').textContent = '가족 초대를 받았어요';
+    $('#joinCard').querySelector('h2').textContent = '초대를 받았어요';
     $('#joinNick').focus();
   }
 }
 async function createFamily(){
-  const name = $('#famName').value.trim().slice(0, 30) || '우리 가족';
+  const k = cleanKind($('#famKind').value);
+  const name = $('#famName').value.trim().slice(0, 30) || '우리 ' + k;
   const nick = $('#myNick').value.trim().slice(0, 12) || myName().slice(0, 12) || '나';
   const btn = $('#createFam'); btn.disabled = true; gateMsg('');
   try {
     const fref = doc(collection(fdb, 'families'));
-    await setDoc(fref, {name, ownerUid:S.uid, inviteCode:randCode(16), createdAt:Date.now()});
+    await setDoc(fref, {name, kind:k, ownerUid:S.uid, inviteCode:randCode(16), createdAt:Date.now()});
     await setDoc(doc(fdb, 'families', fref.id, 'members', S.uid), {uid:S.uid, nick, name:myName().slice(0, 30), color:0, code:'', joinedAt:Date.now()});
     await setDoc(doc(fdb, 'users', S.uid), {familyId:fref.id}, {merge:true});
     clearInviteParam();
     startApp(fref.id); setView('family');
-    toast('가족을 만들었어요. 초대 링크를 보내 보세요.');
+    toast(josa(k, '을/를') + ' 만들었어요. 초대 링크를 보내 보세요.');
   } catch(e){
-    gateMsg('가족을 만들지 못했어요. Firestore 보안 규칙이 배포됐는지 확인해 주세요. (' + ((e && e.code) || '오류') + ')');
+    gateMsg('공동체를 만들지 못했어요. Firestore 보안 규칙이 배포됐는지 확인해 주세요. (' + ((e && e.code) || '오류') + ')');
   }
   btn.disabled = false;
 }
 async function joinFamily(){
   const inv = parseInvite($('#joinInput').value);
   if (!inv){ gateMsg('초대 링크를 다시 확인해 주세요. 링크 전체를 붙여 넣어야 해요.'); return; }
-  const nick = $('#joinNick').value.trim().slice(0, 12) || myName().slice(0, 12) || '가족';
+  const nick = $('#joinNick').value.trim().slice(0, 12) || myName().slice(0, 12) || '멤버';
   const btn = $('#joinFam'); btn.disabled = true; gateMsg('');
   try {
     await setDoc(doc(fdb, 'families', inv.fid, 'members', S.uid), {uid:S.uid, nick, name:myName().slice(0, 30), code:inv.code, joinedAt:Date.now()}, {merge:true});
     await setDoc(doc(fdb, 'users', S.uid), {familyId:inv.fid}, {merge:true});
     clearInviteParam();
     startApp(inv.fid);
-    toast('가족에 참여했어요!');
+    toast('참여했어요!');
   } catch(e){
-    gateMsg(e && e.code === 'permission-denied' ? '초대 링크가 맞지 않거나 새로 바뀌었어요. 가족에게 새 링크를 받아 주세요.' : '참여하지 못했어요. 인터넷 연결을 확인한 뒤 다시 눌러 주세요.');
+    gateMsg(e && e.code === 'permission-denied' ? '초대 링크가 맞지 않거나 새로 바뀌었어요. 초대한 분께 새 링크를 받아 주세요.' : '참여하지 못했어요. 인터넷 연결을 확인한 뒤 다시 눌러 주세요.');
   }
   btn.disabled = false;
 }
@@ -901,7 +953,7 @@ function startApp(fid){
   S.fid = fid; S.family = null; S.mode = 'loading'; S.canWrite = true; S.confirmLeave = false;
   showApp(); subscribe();
   clearTimeout(S.timer);
-  S.timer = setTimeout(() => { if (S.mode === 'loading') status('가족 기록에 아직 연결되지 않았어요. 인터넷 연결을 확인해 주세요.', 'warn'); }, 10000);
+  S.timer = setTimeout(() => { if (S.mode === 'loading') status('공동체 기록에 아직 연결되지 않았어요. 인터넷 연결을 확인해 주세요.', 'warn'); }, 10000);
   S.dirty = false; S.formKey = '';
   loadFormFor(S.date); gate(); schedule();
 }
@@ -913,10 +965,10 @@ async function copyText(t){
 async function shareInvite(){
   const url = S.family && S.family.inviteCode ? inviteUrl(S.fid, S.family.inviteCode) : '';
   if (!url) return;
-  const famName = S.family && str(S.family.name, 30) || '우리 가족';
+  const famName = S.family && str(S.family.name, 30) || '우리 ' + kind();
   const text = famName + ' 큐티에 초대해요. 링크를 열고 아이디를 만들면 함께 묵상과 기도제목을 나눌 수 있어요.';
   if (navigator.share){
-    try { await navigator.share({title:'우리 가족 큐티', text, url}); return; }
+    try { await navigator.share({title:'우리 ' + kind() + ' 큐티', text, url}); return; }
     catch(e){ if (e && e.name === 'AbortError') return; }
   }
   copyText(text + '\n' + url);

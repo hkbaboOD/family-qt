@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>우리 가족 큐티</title>
-<meta name="description" content="가족이 함께 쓰는 큐티 노트와 기도제목">
+<title>함께 큐티</title>
+<meta name="description" content="가족·순·셀·친구와 함께 쓰는 큐티 노트와 기도제목">
 <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="가족 큐티">
+<meta name="apple-mobile-web-app-title" content="함께 큐티">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
@@ -130,6 +130,8 @@ label.lbl{display:block;font-size:13px;font-weight:400;color:var(--muted);margin
 .bv-ch:first-child{margin-top:8px}
 .bv-wait{color:var(--muted);font-size:15px;margin:8px 0}
 .bg-tag.txt{background:var(--accent);color:#fff}
+.kind-chips{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px}
+.kind-chips .chip{min-height:34px}
 .study-links{margin-top:12px;display:grid;gap:8px}
 .read-btn{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"tag ref" "tag go";column-gap:10px;align-items:center;text-decoration:none;color:var(--ink);background:var(--fill);border-radius:12px;padding:12px 14px;min-height:44px}
 .read-btn:active{opacity:.6}
@@ -308,8 +310,8 @@ mark{background:var(--dawn-soft);color:var(--ink);border-radius:3px;padding:0 2p
 <div id="gate" class="gate">
   <div class="gate-inner">
     <img class="gate-logo" src="icons/icon-192.png" alt="" width="84" height="84">
-    <h1 class="gate-title">우리 가족 큐티</h1>
-    <p class="gate-sub">가족이 같은 말씀을 읽고, 묵상과 기도제목을 함께 나누는 곳</p>
+    <h1 class="gate-title">함께 큐티</h1>
+    <p class="gate-sub">가족·순·셀·친구가 같은 말씀을 읽고, 묵상과 기도제목을 함께 나누는 곳</p>
 
     <section id="g-loading"><p class="meta" style="text-align:center">불러오는 중…</p></section>
 
@@ -334,7 +336,7 @@ mark{background:var(--dawn-soft);color:var(--ink);border-radius:3px;padding:0 2p
         <button type="submit" class="btn" id="authBtn">로그인</button>
         <p class="meta" id="signupNote" hidden style="margin:4px 0 0">아이디·비밀번호는 잊어버리면 찾을 수 없어요. 꼭 기억해 두세요.</p>
       </form>
-      <p class="meta" id="inviteNote" hidden style="text-align:center;margin:0">가족 초대 링크로 들어오셨어요. 처음이면 '가입'을 눌러 아이디를 만든 뒤 참여하세요.</p>
+      <p class="meta" id="inviteNote" hidden style="text-align:center;margin:0">초대 링크로 들어오셨어요. 처음이면 '가입'을 눌러 아이디를 만든 뒤 참여하세요.</p>
     </section>
 
     <section id="g-family" hidden>
@@ -344,15 +346,18 @@ mark{background:var(--dawn-soft);color:var(--ink);border-radius:3px;padding:0 2p
         <input type="text" id="joinInput" placeholder="카톡으로 받은 링크를 붙여 넣으세요">
         <label class="lbl" for="joinNick">내 호칭</label>
         <input type="text" id="joinNick" maxlength="12" placeholder="예: 엄마">
-        <button type="button" class="btn" id="joinFam">가족에 참여하기</button>
+        <button type="button" class="btn" id="joinFam">참여하기</button>
       </div>
       <div class="card gform">
-        <h2>새 가족 만들기</h2>
-        <label class="lbl" for="famName">가족 이름</label>
-        <input type="text" id="famName" maxlength="30" placeholder="예: 정씨네 가족">
+        <h2>새 공동체 만들기</h2>
+        <label class="lbl" for="famKind">공동체 유형</label>
+        <div class="kind-chips" data-target="famKind"><button type="button" class="chip" data-kind="가족">가족</button><button type="button" class="chip" data-kind="순">순</button><button type="button" class="chip" data-kind="셀">셀</button><button type="button" class="chip" data-kind="교회공동체">교회공동체</button><button type="button" class="chip" data-kind="친구">친구</button><button type="button" class="chip" data-kind="">직접 입력</button></div>
+        <input type="text" id="famKind" maxlength="10" value="가족" placeholder="예: 가족, 순, 셀, 청년부, 독서모임">
+        <label class="lbl" for="famName">공동체 이름</label>
+        <input type="text" id="famName" maxlength="30" placeholder="예: 정씨네, 사랑순, 청년부 1셀">
         <label class="lbl" for="myNick">내 호칭</label>
         <input type="text" id="myNick" maxlength="12" placeholder="예: 아빠">
-        <button type="button" class="btn ghost" id="createFam">가족 만들기</button>
+        <button type="button" class="btn ghost" id="createFam">만들기</button>
       </div>
       <button type="button" class="link" id="signOut1" style="justify-self:center">다른 아이디로 로그인</button>
     </section>
@@ -363,7 +368,7 @@ mark{background:var(--dawn-soft);color:var(--ink);border-radius:3px;padding:0 2p
 <div id="app" hidden>
   <header class="top">
     <div class="brand">
-      <div><p class="app-sub">우리 가족 큐티</p><h1 id="pageTitle">오늘의 큐티</h1></div>
+      <div><p class="app-sub" id="appSub">함께 큐티</p><h1 id="pageTitle">오늘의 큐티</h1></div>
       <span class="streak" id="streak"></span>
     </div>
     <div class="datenav" id="datenav">
@@ -417,7 +422,7 @@ mark{background:var(--dawn-soft);color:var(--ink);border-radius:3px;padding:0 2p
             </div>
           </div>
           <div class="form-foot">
-            <label class="switch"><input type="checkbox" id="f-share" checked> 가족과 나누기</label>
+            <label class="switch"><input type="checkbox" id="f-share" checked> <span class="k-share">가족과 나누기</span></label>
             <div class="row">
               <button type="button" class="btn line small" id="delBtn" hidden>삭제</button>
               <button type="submit" class="btn" id="saveBtn">저장</button>
@@ -437,7 +442,7 @@ mark{background:var(--dawn-soft);color:var(--ink);border-radius:3px;padding:0 2p
         <textarea id="pr-text" maxlength="500" placeholder="예: 이번 주 프로젝트를 지혜롭게 마무리하도록"></textarea>
         <div class="pr-row">
           <label class="pr-date" for="pr-date">적은 날 <input type="date" id="pr-date"></label>
-          <label class="switch"><input type="checkbox" id="pr-share" checked> 가족과 나누기</label>
+          <label class="switch"><input type="checkbox" id="pr-share" checked> <span class="k-share">가족과 나누기</span></label>
         </div>
         <div class="row" style="justify-content:flex-end">
           <button type="button" class="btn line" id="prCancel" hidden>취소</button>
@@ -477,22 +482,22 @@ mark{background:var(--dawn-soft);color:var(--ink);border-radius:3px;padding:0 2p
       <div class="versegrid" id="verseGrid"></div>
     </section>
 
-    <!-- 가족 -->
+    <!-- 공동체 -->
     <section class="view" id="view-family" hidden>
       <div class="card fam">
         <h2>내 호칭</h2>
-        <p class="meta" style="margin:4px 0 10px">가족 나눔과 달력에 이 이름과 색으로 보여요.</p>
+        <p class="meta" style="margin:4px 0 10px"><span class="k-word">가족</span> 나눔과 달력에 이 이름과 색으로 보여요.</p>
         <input type="text" id="nick" maxlength="12" placeholder="예: 아빠, 엄마, 하윤">
         <div class="swatches" id="swatches" style="margin-top:12px"></div>
         <div class="row" style="margin-top:14px"><button type="button" class="btn" id="nickSave">저장</button></div>
       </div>
       <div class="card fam">
-        <h2>가족 구성원</h2>
+        <h2 id="memTitle">가족 구성원</h2>
         <div class="members" id="members" style="margin-top:8px"></div>
       </div>
       <div class="card fam">
-        <h2 id="famTitle">가족 초대하기</h2>
-        <p class="meta" style="margin:4px 0 10px">이 링크를 카카오톡으로 보내면, 가족이 아이디를 만들고 바로 참여해요.</p>
+        <h2 id="famTitle">초대하기</h2>
+        <p class="meta" id="inviteMeta" style="margin:4px 0 10px">이 링크를 카카오톡으로 보내면, 받은 사람이 아이디를 만들고 바로 참여해요.</p>
         <p class="invite" id="inviteLink"></p>
         <div class="row" style="margin-top:12px">
           <button type="button" class="btn" id="shareInvite">초대 링크 보내기</button>
@@ -500,12 +505,22 @@ mark{background:var(--dawn-soft);color:var(--ink);border-radius:3px;padding:0 2p
         </div>
         <button type="button" class="link" id="regenCode" hidden style="margin-top:6px;text-align:left">초대 링크 새로 만들기 (이전 링크는 더 이상 못 써요)</button>
       </div>
+      <div class="card fam" id="groupSettings" hidden>
+        <h2>공동체 설정</h2>
+        <p class="meta" style="margin:4px 0 10px">만든 사람만 바꿀 수 있어요. 바꾸면 모든 구성원 화면의 이름과 문구가 함께 바뀌어요.</p>
+        <label class="lbl" for="setKind">공동체 유형</label>
+        <div class="kind-chips" data-target="setKind"><button type="button" class="chip" data-kind="가족">가족</button><button type="button" class="chip" data-kind="순">순</button><button type="button" class="chip" data-kind="셀">셀</button><button type="button" class="chip" data-kind="교회공동체">교회공동체</button><button type="button" class="chip" data-kind="친구">친구</button><button type="button" class="chip" data-kind="">직접 입력</button></div>
+        <input type="text" id="setKind" maxlength="10" placeholder="예: 가족, 순, 셀, 청년부, 독서모임">
+        <label class="lbl" for="setName" style="margin-top:10px">공동체 이름</label>
+        <input type="text" id="setName" maxlength="30" placeholder="예: 정씨네, 사랑순, 청년부 1셀">
+        <div class="row" style="margin-top:14px"><button type="button" class="btn" id="groupSave">저장</button></div>
+      </div>
       <div class="card fam">
         <h2>계정</h2>
         <p class="meta" id="acctLine" style="margin:4px 0 12px"></p>
         <div class="row" style="justify-content:space-between">
           <button type="button" class="btn line" id="signOut">로그아웃</button>
-          <button type="button" class="link danger" id="leaveFam">가족에서 나가기</button>
+          <button type="button" class="link danger" id="leaveFam">나가기</button>
         </div>
         <p class="meta" style="margin:14px 0 0">아이폰 홈 화면에 앱처럼 두려면 사파리에서 공유 버튼 → '홈 화면에 추가'를 누르세요.</p>
         <p class="meta" id="modeLine" style="margin:6px 0 0"></p>
@@ -524,7 +539,7 @@ mark{background:var(--dawn-soft);color:var(--ink);border-radius:3px;padding:0 2p
       <button type="button" class="tab" data-view="cards">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="14" height="17" rx="2"/><path d="M4 7v12a2 2 0 0 0 2 2h10"/><path d="M10 9h6M10 13h4"/></svg>말씀카드</button>
       <button type="button" class="tab" data-view="family">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9.5" r="2.4"/><path d="M3 20c.6-3.4 3-5.5 6-5.5s5.4 2.1 6 5.5M15 15.2c2.6-.4 5 1.2 5.8 4.3"/></svg>가족</button>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9.5" r="2.4"/><path d="M3 20c.6-3.4 3-5.5 6-5.5s5.4 2.1 6 5.5M15 15.2c2.6-.4 5 1.2 5.8 4.3"/></svg><span id="tabGroup">가족</span></button>
     </div>
   </nav>
 </div>
